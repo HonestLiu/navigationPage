@@ -122,7 +122,6 @@ const App = {
             const val = document.getElementById('searchInput').value.trim();
             if (val) this.fetchSuggestions(val);
         });
-        document.getElementById('searchBtn').addEventListener('click', () => this.search());
 
         document.getElementById('engineBtn').addEventListener('click', (e) => {
             e.stopPropagation();

@@ -344,16 +344,6 @@
         "note": "家庭NAS"
       }
     ],
-    "airdrop_files": [
-      {
-        "id": "9d52072a45f74707",
-        "name": "X0_6rTZl.jpeg",
-        "size": 610216,
-        "mime": "image/jpeg",
-        "path": "/Users/lc/Develop/navigationPage/server/uploads/9d52072a45f74707.jpeg",
-        "createdAt": 1784734529715,
-        "expiresAt": 1784738129715
-      }
-    ]
+    "airdrop_files": []
   }
 }
