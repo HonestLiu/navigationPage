@@ -188,6 +188,15 @@
       "icon": "fa-solid fa-link",
       "color": "#6366f1",
       "category": "常用"
+    },
+    {
+      "id": 22,
+      "sort_order": 21,
+      "name": "极空间",
+      "url": "nas.local:5055",
+      "icon": "fa-solid fa-link",
+      "color": "#6366f1",
+      "category": "Docker"
     }
   ],
   "engines": [
@@ -225,10 +234,10 @@
     }
   ],
   "kv": {
-    "current_category": "开发",
+    "current_category": "Docker",
     "current_engine": "bing",
     "layout_position": "center",
-    "tools_collapsed": true,
+    "tools_collapsed": false,
     "tools_config": [
       {
         "id": "clock",
@@ -292,6 +301,7 @@
       }
     ],
     "category_order": [
+      "Docker",
       "开发",
       "常用",
       "社交",
@@ -325,7 +335,7 @@
     "dns_map": [
       {
         "domain": "nas.local",
-        "ip": "192.168.31.191",
+        "ip": "http://192.168.31.191",
         "note": "家庭NAS"
       }
     ],

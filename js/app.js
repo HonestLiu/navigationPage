@@ -13,6 +13,7 @@ const App = {
         await Storage.init();
         this.currentCategory = await Storage.get('current_category') || '常用';
         this.currentPosition = await Storage.get('layout_position') || 'center';
+        this._cache_category_order = await Storage.get('category_order') || [];
         this.navItems = await Storage.getNavItems();
         this.engines = await Storage.getEngines();
 
@@ -24,6 +25,7 @@ const App = {
         this.renderEngines();
         this.renderEngineDropdown();
         this.applyLayoutPosition();
+        this.initTheme();
         this.initClock();
         this.initPomodoro();
         this.initTodo();
@@ -89,6 +91,7 @@ const App = {
                 section.classList.toggle('collapsed', !!data);
                 arrow.classList.toggle('collapsed', !!data);
             }
+            else if (key === 'theme_mode') { this.applyTheme(data || 'dark'); this.renderThemeButtons(); }
         }
     },
 
@@ -195,6 +198,11 @@ const App = {
                 this.applyLayoutPosition();
                 this.updatePositionButtons();
             });
+        });
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.theme-btn');
+            if (btn) this.setTheme(btn.dataset.theme);
         });
 
         document.getElementById('toolsToggle').addEventListener('click', () => this.toggleTools());
@@ -379,6 +387,44 @@ const App = {
         document.querySelectorAll('.position-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.position === this.currentPosition));
     },
 
+    // === Theme ===
+    _themeMode: 'dark',
+    _systemThemeMedia: null,
+
+    async initTheme() {
+        const cookieVal = (document.cookie.match(/theme_mode=([^;]+)/) || [])[1];
+        const serverVal = await Storage.get('theme_mode');
+        this._themeMode = cookieVal || serverVal || 'dark';
+        this.applyTheme(this._themeMode);
+        this._systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+        this._systemThemeMedia.addEventListener('change', () => {
+            if (this._themeMode === 'system') this.applyTheme('system');
+        });
+    },
+
+    applyTheme(mode) {
+        this._themeMode = mode;
+        let effective = mode;
+        if (mode === 'system') {
+            effective = this._systemThemeMedia.matches ? 'dark' : 'light';
+        }
+        document.documentElement.classList.toggle('light-theme', effective === 'light');
+    },
+
+    async setTheme(mode) {
+        this._themeMode = mode;
+        this.applyTheme(mode);
+        document.cookie = 'theme_mode=' + mode + ';path=/;max-age=31536000';
+        await Storage.set('theme_mode', mode);
+        this.renderThemeButtons();
+    },
+
+    renderThemeButtons() {
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.theme === this._themeMode);
+        });
+    },
+
     toggleSettings() { document.getElementById('settingsPanel').classList.toggle('active'); if (document.getElementById('settingsPanel').classList.contains('active')) this.renderSettingsLists(); },
     toggleWallpaperPanel() { const p = document.getElementById('wallpaperPanel'); p.classList.toggle('active'); if (p.classList.contains('active')) { this.updateWallpaperPreview(); this.renderWallpaperHistory(); } },
     closeModal(id) { document.getElementById(id).classList.remove('active'); },
@@ -444,6 +490,7 @@ const App = {
 
         this.renderDnsMap();
         this.renderToolsConfig();
+        this.renderThemeButtons();
     },
 
     async renderToolsConfig() {
@@ -488,7 +535,9 @@ const App = {
         document.getElementById('editColor').value = item ? item.color : '#6366f1';
         document.getElementById('editColorHex').textContent = item ? item.color : '#6366f1';
         const sel = document.getElementById('editCategory');
-        const cats = [...new Set(this.navItems.map(i => i.category || '常用'))];
+        const order = this._cache_category_order || [];
+        const catsFromItems = [...new Set(this.navItems.map(i => i.category || '常用'))];
+        const cats = [...new Set([...order, ...catsFromItems])];
         sel.innerHTML = '<option value="" disabled' + (!item ? ' selected' : '') + '>请选择分类</option>' + cats.map(c => `<option value="${c}" ${item && item.category === c ? 'selected' : ''}>${c}</option>`).join('');
         if (item) sel.value = item.category;
         this.selectedIcon = item ? item.icon : 'fa-solid fa-link';
