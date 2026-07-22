@@ -2,18 +2,24 @@ const App = {
     currentCategory: '常用',
     currentPosition: 'center',
     selectedIcon: 'fa-solid fa-link',
+    navItems: [],
+    engines: [],
 
-    init() {
-        Storage.ensureDefaults();
-        this.currentCategory = Storage.getCurrentCategory();
-        this.currentPosition = Storage.getLayoutPosition();
+    async init() {
+        await Storage.init();
+        this.currentCategory = await Storage.get('current_category') || '常用';
+        this.currentPosition = await Storage.get('layout_position') || 'center';
+        this.navItems = await Storage.getNavItems();
+        this.engines = await Storage.getEngines();
+
+        Storage.onChange((type, key, data) => this.handleRemoteChange(type, key, data));
+
         this.bindEvents();
         this.renderCategoryTabs();
         this.renderNavItems();
         this.renderEngines();
-        this.selectEngine(Storage.getCurrentEngine());
+        this.renderEngineDropdown();
         this.applyLayoutPosition();
-        this.initWallpaper();
         this.initClock();
         this.initPomodoro();
         this.initTodo();
@@ -24,33 +30,52 @@ const App = {
         this.initPassword();
         this.initClipboard();
         this.initTimestamp();
-        this.applyToolsVisibility();
-        this.applyToolsOrder();
         this.initHitokoto();
+        this.applyToolsVisibility();
+
+        const tc = await Storage.get('tools_collapsed');
+        if (tc !== false) {
+            document.getElementById('toolsSection').classList.add('collapsed');
+            document.getElementById('toolsArrow').classList.add('collapsed');
+        }
+    },
+
+    handleRemoteChange(type, key, data) {
+        if (type === 'nav_change') {
+            this.refreshNav();
+        } else if (type === 'engine_change') {
+            this.refreshEngines();
+        } else if (type === 'kv') {
+            if (key === 'current_category') { this.currentCategory = data; this.renderCategoryTabs(); this.renderNavItems(); }
+            if (key === 'layout_position') { this.currentPosition = data; this.applyLayoutPosition(); }
+            if (key === 'current_engine') { this.renderEngineDropdown(); }
+            if (key === 'category_order') { this.renderCategoryTabs(); }
+            if (key === 'tools_config') { this.applyToolsVisibility(); this.renderToolsConfig(); }
+        }
+    },
+
+    async refreshNav() {
+        this.navItems = await Storage.getNavItems();
+        this.renderCategoryTabs();
+        this.renderNavItems();
+    },
+
+    async refreshEngines() {
+        this.engines = await Storage.getEngines();
+        this.renderEngines();
+        this.renderEngineDropdown();
     },
 
     bindEvents() {
-        // 搜索
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const active = document.querySelector('.suggestion-item.active');
-                if (active) {
-                    this.searchWithQuery(active.dataset.query);
-                } else {
-                    this.search();
-                }
+                if (active) this.searchWithQuery(active.dataset.query);
+                else this.search();
             }
         });
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.fetchSuggestions(e.target.value);
-        });
-        document.getElementById('searchInput').addEventListener('keyup', (e) => {
-            if (['ArrowDown', 'ArrowUp', 'Escape', 'Enter'].includes(e.key)) return;
-            this.fetchSuggestions(e.target.value);
-        });
-        document.getElementById('searchInput').addEventListener('keydown', (e) => {
-            this.handleSuggestionKeydown(e);
-        });
+        document.getElementById('searchInput').addEventListener('input', (e) => this.fetchSuggestions(e.target.value));
+        document.getElementById('searchInput').addEventListener('keydown', (e) => this.handleSuggestionKeydown(e));
         document.getElementById('searchInput').addEventListener('focus', () => {
             const val = document.getElementById('searchInput').value.trim();
             if (val) this.fetchSuggestions(val);
@@ -61,28 +86,20 @@ const App = {
             e.stopPropagation();
             document.getElementById('engineDropdown').classList.toggle('active');
         });
+
         document.addEventListener('click', (e) => {
             document.getElementById('engineDropdown').classList.remove('active');
-            const settingsPanel = document.getElementById('settingsPanel');
-            if (settingsPanel.classList.contains('active') &&
-                !settingsPanel.contains(e.target) &&
-                !e.target.closest('#settingsFab')) {
-                settingsPanel.classList.remove('active');
-            }
-            const wallpaperPanel = document.getElementById('wallpaperPanel');
-            if (wallpaperPanel.classList.contains('active') &&
-                !wallpaperPanel.contains(e.target) &&
-                !e.target.closest('#wallpaperFab')) {
-                wallpaperPanel.classList.remove('active');
-            }
-            if (!e.target.closest('.search-section')) {
-                this.closeSuggestions();
-            }
+            const sp = document.getElementById('settingsPanel');
+            if (sp.classList.contains('active') && !sp.contains(e.target) && !e.target.closest('#settingsFab'))
+                sp.classList.remove('active');
+            const wp = document.getElementById('wallpaperPanel');
+            if (wp.classList.contains('active') && !wp.contains(e.target) && !e.target.closest('#wallpaperFab'))
+                wp.classList.remove('active');
+            if (!e.target.closest('.search-section')) this.closeSuggestions();
         });
 
         document.getElementById('settingsFab').addEventListener('click', () => this.toggleSettings());
         document.getElementById('closeSettings').addEventListener('click', () => this.toggleSettings());
-
         document.getElementById('addSiteBtn').addEventListener('click', () => this.openNavModal());
         document.getElementById('addNavItem').addEventListener('click', () => this.openNavModal());
         document.getElementById('addCategory').addEventListener('click', () => this.openCategoryModal());
@@ -119,20 +136,13 @@ const App = {
         document.querySelectorAll('.position-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.currentPosition = btn.dataset.position;
-                Storage.setLayoutPosition(this.currentPosition);
+                Storage.set('layout_position', this.currentPosition);
                 this.applyLayoutPosition();
                 this.updatePositionButtons();
             });
         });
 
-        // 工具区域折叠
         document.getElementById('toolsToggle').addEventListener('click', () => this.toggleTools());
-        // 默认折叠
-        if (!Storage.get('tools_collapsed_explicit')) {
-            document.getElementById('toolsSection').classList.add('collapsed');
-            document.getElementById('toolsArrow').classList.add('collapsed');
-            Storage.set('tools_collapsed', true);
-        }
 
         document.getElementById('iconPicker').addEventListener('click', (e) => {
             const option = e.target.closest('.icon-option');
@@ -143,27 +153,22 @@ const App = {
             }
         });
 
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-
+        document.getElementById('iconUploadArea').addEventListener('click', () => document.getElementById('iconFileInput').click());
+        document.getElementById('iconFileInput').addEventListener('change', (e) => this.handleIconUpload(e));
         document.getElementById('editColor').addEventListener('input', (e) => {
             document.getElementById('editColorHex').textContent = e.target.value;
         });
 
-        // 图标上传
-        document.getElementById('iconUploadArea').addEventListener('click', () => {
-            document.getElementById('iconFileInput').click();
-        });
-        document.getElementById('iconFileInput').addEventListener('change', (e) => this.handleIconUpload(e));
+        if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
 
         document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) this.closeModal(modal.id);
-            });
+            modal.addEventListener('click', (e) => { if (e.target === modal) this.closeModal(modal.id); });
         });
+
+        this.initWallpaper();
     },
 
+    // === Search ===
     search() {
         const input = document.getElementById('searchInput').value.trim();
         if (!input) return;
@@ -171,110 +176,83 @@ const App = {
     },
 
     searchWithQuery(query) {
-        const engine = Storage.getEngines().find(e => e.id === Storage.getCurrentEngine());
-        if (engine) {
-            window.open(engine.url.replace('%s', encodeURIComponent(query)), '_blank');
-        }
+        const engine = this.engines.find(e => e.id === (this._cache_current_engine || 'google'));
+        if (engine) window.open(engine.url.replace('%s', encodeURIComponent(query)), '_blank');
         this.closeSuggestions();
         document.getElementById('searchInput').value = query;
     },
 
+    async selectEngine(id) {
+        await Storage.set('current_engine', id);
+        this.renderEngineDropdown();
+    },
+
+    renderEngineDropdown() {
+        const dropdown = document.getElementById('engineDropdown');
+        const currentId = this._cache_current_engine || 'google';
+        const currentEngine = this.engines.find(e => e.id === currentId);
+        if (currentEngine) {
+            const icon = document.getElementById('engineIcon');
+            icon.className = currentEngine.icon;
+            icon.style.cssText = `font-size:20px;color:${currentEngine.color};`;
+        }
+        dropdown.innerHTML = this.engines.map(engine => `
+            <button class="engine-option ${engine.id === currentId ? 'selected' : ''}" data-id="${engine.id}">
+                <i class="${engine.icon}" style="color: ${engine.color};"></i>
+                <span>${engine.name}</span>
+            </button>
+        `).join('');
+        dropdown.querySelectorAll('.engine-option').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._cache_current_engine = btn.dataset.id;
+                this.selectEngine(btn.dataset.id);
+                dropdown.classList.remove('active');
+            });
+        });
+    },
+
+    async renderEngines() {
+        this._cache_current_engine = await Storage.get('current_engine') || 'google';
+        this.renderEngineDropdown();
+    },
+
+    // === Suggestions ===
     suggestionIndex: -1,
     suggestionTimer: null,
 
     async fetchSuggestions(query) {
         clearTimeout(this.suggestionTimer);
-        const box = document.getElementById('searchSuggestions');
-        if (!query || query.trim().length < 1) {
-            this.closeSuggestions();
-            return;
-        }
+        if (!query || query.trim().length < 1) { this.closeSuggestions(); return; }
         this.suggestionTimer = setTimeout(async () => {
             try {
-                const engineId = Storage.getCurrentEngine();
+                const engineId = this._cache_current_engine || 'google';
                 let suggestions = [];
-                if (engineId === 'google') {
-                    suggestions = await this.getGoogleSuggestions(query);
-                } else if (engineId === 'bing') {
-                    suggestions = await this.getBingSuggestions(query);
-                } else if (engineId === 'baidu') {
-                    suggestions = await this.getBaiduSuggestions(query);
-                } else if (engineId === 'duckduckgo') {
-                    suggestions = await this.getDuckDuckGoSuggestions(query);
-                }
-                if (suggestions.length > 0) {
-                    this.renderSuggestions(suggestions, query);
-                } else {
-                    this.closeSuggestions();
-                }
-            } catch (e) {
-                console.warn('Suggestion fetch failed:', e);
-                this.closeSuggestions();
-            }
+                if (engineId === 'google') suggestions = await this.getGoogleSuggestions(query);
+                else if (engineId === 'bing') suggestions = await this.getBingSuggestions(query);
+                else if (engineId === 'baidu') suggestions = await this.getBaiduSuggestions(query);
+                else if (engineId === 'duckduckgo') suggestions = await this.getDuckDuckGoSuggestions(query);
+                if (suggestions.length > 0) this.renderSuggestions(suggestions, query);
+                else this.closeSuggestions();
+            } catch (e) { this.closeSuggestions(); }
         }, 250);
     },
 
-    async getGoogleSuggestions(query) {
-        try {
-            const res = await fetch('https://suggestqueries.google.com/complete/search?client=firefox&q=' + encodeURIComponent(query));
-            const data = await res.json();
-            return (data[1] || []).slice(0, 8);
-        } catch (e) { return []; }
-    },
-
-    async getBingSuggestions(query) {
-        try {
-            const res = await fetch('https://api.bing.com/qsonhs.aspx?q=' + encodeURIComponent(query));
-            const data = await res.json();
-            return (data.AS?.Results?.[0]?.Suggests || []).map(s => s.Text).slice(0, 8);
-        } catch (e) { return []; }
-    },
-
-    async getBaiduSuggestions(query) {
-        return new Promise((resolve) => {
-            const callbackName = '_baiduSug_' + Date.now();
-            window[callbackName] = (data) => {
-                resolve((data.s || []).slice(0, 8));
-                delete window[callbackName];
-                script.remove();
-            };
-            const script = document.createElement('script');
-            script.src = 'https://suggestion.baidu.com/su?action=opensearch&ie=utf-8&wd=' + encodeURIComponent(query) + '&cb=' + callbackName;
-            script.onerror = () => { resolve([]); delete window[callbackName]; script.remove(); };
-            document.head.appendChild(script);
-            setTimeout(() => { resolve([]); delete window[callbackName]; script.remove(); }, 3000);
-        });
-    },
-
-    async getDuckDuckGoSuggestions(query) {
-        try {
-            const res = await fetch('https://duckduckgo.com/ac/?q=' + encodeURIComponent(query) + '&type=list');
-            const data = await res.json();
-            return (data[1] || []).map(s => s[0]).slice(0, 8);
-        } catch (e) { return []; }
-    },
+    async getGoogleSuggestions(q) { try { const r = await fetch('https://suggestqueries.google.com/complete/search?client=firefox&q=' + encodeURIComponent(q)); const d = await r.json(); return (d[1]||[]).slice(0,8); } catch(e) { return []; } },
+    async getBingSuggestions(q) { try { const r = await fetch('https://api.bing.com/qsonhs.aspx?q=' + encodeURIComponent(q)); const d = await r.json(); return (d.AS?.Results?.[0]?.Suggests||[]).map(s=>s.Text).slice(0,8); } catch(e) { return []; } },
+    async getBaiduSuggestions(q) { return new Promise((resolve) => { const cb = '_bsug_'+Date.now(); window[cb]=(d)=>{resolve((d.s||[]).slice(0,8));delete window[cb];script.remove();}; const script=document.createElement('script'); script.src='https://suggestion.baidu.com/su?action=opensearch&ie=utf-8&wd='+encodeURIComponent(q)+'&cb='+cb; script.onerror=()=>{resolve([]);delete window[cb];script.remove();}; document.head.appendChild(script); setTimeout(()=>{resolve([]);delete window[cb];script.remove();},3000); }); },
+    async getDuckDuckGoSuggestions(q) { try { const r = await fetch('https://duckduckgo.com/ac/?q='+encodeURIComponent(q)+'&type=list'); const d = await r.json(); return (d[1]||[]).map(s=>s[0]).slice(0,8); } catch(e) { return []; } },
 
     renderSuggestions(suggestions, query) {
         const box = document.getElementById('searchSuggestions');
         this.suggestionIndex = -1;
-        if (suggestions.length === 0) {
-            this.closeSuggestions();
-            return;
-        }
-        const lowerQuery = query.toLowerCase();
         box.innerHTML = suggestions.map((s, i) => {
-            const highlighted = s.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<em>$1</em>');
-            return '<div class="suggestion-item" data-index="' + i + '" data-query="' + s + '">' +
-                '<i class="fas fa-magnifying-glass"></i>' +
-                '<span class="suggestion-text">' + highlighted + '</span>' +
-                '<i class="fas fa-arrow-up-left suggestion-arrow"></i>' +
-            '</div>';
+            const hl = s.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<em>$1</em>');
+            return `<div class="suggestion-item" data-index="${i}" data-query="${s}"><i class="fas fa-magnifying-glass"></i><span class="suggestion-text">${hl}</span><i class="fas fa-arrow-up-left suggestion-arrow"></i></div>`;
         }).join('');
         box.classList.add('active');
         box.querySelectorAll('.suggestion-item').forEach(item => {
-            item.addEventListener('click', () => {
-                this.searchWithQuery(item.dataset.query);
-            });
+            item.addEventListener('click', () => this.searchWithQuery(item.dataset.query));
             item.addEventListener('mouseenter', () => {
                 box.querySelectorAll('.suggestion-item').forEach(s => s.classList.remove('active'));
                 item.classList.add('active');
@@ -288,83 +266,33 @@ const App = {
         if (!box.classList.contains('active')) return;
         const items = box.querySelectorAll('.suggestion-item');
         if (items.length === 0) return;
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            this.suggestionIndex = Math.min(this.suggestionIndex + 1, items.length - 1);
-            this.highlightSuggestion(items);
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            this.suggestionIndex = Math.max(this.suggestionIndex - 1, 0);
-            this.highlightSuggestion(items);
-        } else if (e.key === 'Escape') {
-            this.closeSuggestions();
-        }
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.suggestionIndex = Math.min(this.suggestionIndex + 1, items.length - 1); this.highlightSuggestion(items); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.suggestionIndex = Math.max(this.suggestionIndex - 1, 0); this.highlightSuggestion(items); }
+        else if (e.key === 'Escape') { this.closeSuggestions(); }
     },
 
     highlightSuggestion(items) {
         items.forEach((item, i) => {
             item.classList.toggle('active', i === this.suggestionIndex);
-            if (i === this.suggestionIndex) {
-                document.getElementById('searchInput').value = item.dataset.query;
-            }
+            if (i === this.suggestionIndex) document.getElementById('searchInput').value = item.dataset.query;
         });
     },
 
-    closeSuggestions() {
-        document.getElementById('searchSuggestions').classList.remove('active');
-        this.suggestionIndex = -1;
-    },
+    closeSuggestions() { document.getElementById('searchSuggestions').classList.remove('active'); this.suggestionIndex = -1; },
 
-    selectEngine(id) {
-        Storage.setCurrentEngine(id);
-        const engine = Storage.getEngines().find(e => e.id === id);
-        if (engine) {
-            const icon = document.getElementById('engineIcon');
-            const parent = icon.parentNode;
-            const newIcon = document.createElement('i');
-            newIcon.id = 'engineIcon';
-            newIcon.className = engine.icon;
-            newIcon.style.cssText = `font-size: 20px; color: ${engine.color};`;
-            parent.replaceChild(newIcon, icon);
-        }
-        this.renderEngineDropdown();
-    },
-
-    renderEngineDropdown() {
-        const dropdown = document.getElementById('engineDropdown');
-        const engines = Storage.getEngines();
-        const currentId = Storage.getCurrentEngine();
-        dropdown.innerHTML = engines.map(engine => `
-            <button class="engine-option ${engine.id === currentId ? 'selected' : ''}" data-id="${engine.id}">
-                <i class="${engine.icon}" style="color: ${engine.color};"></i>
-                <span>${engine.name}</span>
-            </button>
-        `).join('');
-        dropdown.querySelectorAll('.engine-option').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.selectEngine(btn.dataset.id);
-                dropdown.classList.remove('active');
-            });
-        });
-    },
-
-    renderEngines() {
-        this.renderEngineDropdown();
-    },
-
+    // === Categories ===
     renderCategoryTabs() {
         const tabs = document.getElementById('categoryTabs');
-        const categories = Storage.getCategories();
-        tabs.innerHTML = categories.map(cat => `
-            <button class="category-tab ${cat === this.currentCategory ? 'active' : ''}" data-category="${cat}">
-                ${cat}
-            </button>
-        `).join('');
+        const order = this._cache_category_order || [];
+        const catsFromItems = [...new Set(this.navItems.map(item => item.category || '常用'))];
+        const allCats = [...new Set([...order, ...catsFromItems])];
+        const categories = allCats.filter(c => order.includes(c)).concat(allCats.filter(c => !order.includes(c)));
+
+        tabs.innerHTML = categories.map(cat => `<button class="category-tab ${cat === this.currentCategory ? 'active' : ''}" data-category="${cat}">${cat}</button>`).join('');
         tabs.querySelectorAll('.category-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
+            tab.addEventListener('click', async () => {
                 this.currentCategory = tab.dataset.category;
-                Storage.setCurrentCategory(this.currentCategory);
+                await Storage.set('current_category', this.currentCategory);
                 this.renderCategoryTabs();
                 this.renderNavItems();
             });
@@ -374,246 +302,31 @@ const App = {
 
     renderNavItems() {
         const grid = document.getElementById('navGrid');
-        const allItems = Storage.getNavItems();
-        const items = allItems.filter(item => (item.category || '常用') === this.currentCategory);
+        const items = this.navItems.filter(item => (item.category || '常用') === this.currentCategory);
         grid.innerHTML = items.map(item => {
-            const isImage = item.icon && !item.icon.startsWith('fa-');
-            const iconHtml = isImage
-                ? '<img src="' + item.icon + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'
-                : '<i class="' + item.icon + '"></i>';
-            return '<a href="' + item.url + '" class="nav-item" data-id="' + item.id + '">' +
-                '<div class="icon" style="background: ' + item.color + ';">' + iconHtml + '</div>' +
-                '<span class="name">' + item.name + '</span></a>';
+            const isImg = item.icon && !item.icon.startsWith('fa-');
+            const iconHtml = isImg ? `<img src="${item.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<i class="${item.icon}"></i>`;
+            return `<a href="${item.url}" class="nav-item" data-id="${item.id}"><div class="icon" style="background:${item.color};">${iconHtml}</div><span class="name">${item.name}</span></a>`;
         }).join('');
         grid.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const url = Storage.resolveUrl(item.href);
-                window.open(url, '_blank');
-            });
+            item.addEventListener('click', (e) => { e.preventDefault(); window.open(Storage.resolveUrl(item.href), '_blank'); });
         });
     },
 
     applyLayoutPosition() {
-        const container = document.querySelector('.container');
-        container.classList.remove('position-top', 'position-center', 'position-bottom');
-        container.classList.add('position-' + this.currentPosition);
+        const c = document.querySelector('.container');
+        c.classList.remove('position-top', 'position-center', 'position-bottom');
+        c.classList.add('position-' + this.currentPosition);
         this.updatePositionButtons();
     },
 
     updatePositionButtons() {
-        document.querySelectorAll('.position-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.position === this.currentPosition);
-        });
+        document.querySelectorAll('.position-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.position === this.currentPosition));
     },
 
-    toggleSettings() {
-        const panel = document.getElementById('settingsPanel');
-        panel.classList.toggle('active');
-        if (panel.classList.contains('active')) {
-            this.renderSettingsLists();
-        }
-    },
-
-    renderSettingsLists() {
-        const categoryList = document.getElementById('categoryList');
-        const categories = Storage.getCategories();
-        const navItems = Storage.getNavItems();
-        categoryList.innerHTML = categories.map(cat => {
-            const count = navItems.filter(item => (item.category || '常用') === cat).length;
-            return `
-                <div class="category-row" data-category="${cat}">
-                    <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
-                    <div class="category-name">${cat}</div>
-                    <div class="category-count">${count} 个网站</div>
-                    <div class="item-actions">
-                        <button class="edit-item" data-category="${cat}"><i class="fas fa-edit"></i></button>
-                        <button class="delete-item" data-category="${cat}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        categoryList.querySelectorAll('.edit-item').forEach(btn => {
-            btn.addEventListener('click', () => this.editCategory(btn.dataset.category));
-        });
-        categoryList.querySelectorAll('.delete-item').forEach(btn => {
-            btn.addEventListener('click', () => this.deleteCategory(btn.dataset.category));
-        });
-
-        // 分类拖拽排序
-        let draggedCat = null;
-        categoryList.querySelectorAll('.category-row').forEach(row => {
-            row.setAttribute('draggable', 'true');
-            row.addEventListener('dragstart', (e) => {
-                draggedCat = row;
-                row.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-            });
-            row.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (row !== draggedCat) row.classList.add('drag-over');
-            });
-            row.addEventListener('dragleave', () => {
-                row.classList.remove('drag-over');
-            });
-            row.addEventListener('drop', (e) => {
-                e.preventDefault();
-                row.classList.remove('drag-over');
-                if (draggedCat && row !== draggedCat) {
-                    const cats = Storage.getCategories();
-                    const fromCat = draggedCat.dataset.category;
-                    const toCat = row.dataset.category;
-                    const fromIdx = cats.indexOf(fromCat);
-                    const toIdx = cats.indexOf(toCat);
-                    const [moved] = cats.splice(fromIdx, 1);
-                    cats.splice(toIdx, 0, moved);
-                    Storage.setCategoryOrder(cats);
-                    this.renderSettingsLists();
-                    this.renderCategoryTabs();
-                }
-            });
-            row.addEventListener('dragend', () => {
-                row.classList.remove('dragging');
-                categoryList.querySelectorAll('.category-row').forEach(r => r.classList.remove('drag-over'));
-                draggedCat = null;
-            });
-        });
-
-        const navList = document.getElementById('navItemsList');
-        navList.innerHTML = navItems.map(item => {
-            const isImage = item.icon && !item.icon.startsWith('fa-');
-            const iconHtml = isImage
-                ? '<img src="' + item.icon + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'
-                : '<i class="' + item.icon + '"></i>';
-            return `
-                <div class="nav-item-row" data-id="${item.id}">
-                    <div class="item-icon" style="background: ${item.color};">
-                        ${iconHtml}
-                    </div>
-                    <div class="item-info">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-url">${item.category || '常用'} · ${item.url}</div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i></button>
-                        <button class="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        navList.querySelectorAll('.edit-item').forEach(btn => {
-            btn.addEventListener('click', () => this.editNavItem(btn.dataset.id));
-        });
-        navList.querySelectorAll('.delete-item').forEach(btn => {
-            btn.addEventListener('click', () => this.deleteNavItem(btn.dataset.id));
-        });
-
-        const engineList = document.getElementById('engineList');
-        const engines = Storage.getEngines();
-        engineList.innerHTML = engines.map(engine => `
-            <div class="engine-row" data-id="${engine.id}">
-                <div class="item-icon" style="background: ${engine.color};">
-                    <i class="${engine.icon}"></i>
-                </div>
-                <div class="item-info">
-                    <div class="item-name">${engine.name}</div>
-                    <div class="item-url">${engine.url}</div>
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item" data-id="${engine.id}"><i class="fas fa-edit"></i></button>
-                    <button class="delete-item" data-id="${engine.id}"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `).join('');
-        engineList.querySelectorAll('.edit-item').forEach(btn => {
-            btn.addEventListener('click', () => this.editEngine(btn.dataset.id));
-        });
-        engineList.querySelectorAll('.delete-item').forEach(btn => {
-            btn.addEventListener('click', () => this.deleteEngine(btn.dataset.id));
-        });
-
-        // 工具配置列表
-        this.renderToolsConfig();
-
-        // DNS映射列表
-        this.renderDnsMap();
-    },
-
-    renderToolsConfig() {
-        const list = document.getElementById('toolsConfigList');
-        const config = Storage.getToolsConfig();
-        list.innerHTML = config.map(tool => `
-            <div class="tool-config-row" draggable="true" data-id="${tool.id}">
-                <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
-                <div class="tool-config-icon"><i class="${tool.icon}"></i></div>
-                <span class="tool-config-name">${tool.name}</span>
-                <button class="toggle-switch ${tool.enabled ? 'active' : ''}" data-id="${tool.id}"></button>
-            </div>
-        `).join('');
-
-        // 开关事件
-        list.querySelectorAll('.toggle-switch').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.dataset.id;
-                const cfg = Storage.getToolsConfig();
-                const tool = cfg.find(t => t.id === id);
-                if (tool) {
-                    tool.enabled = !tool.enabled;
-                    Storage.setToolsConfig(cfg);
-                    btn.classList.toggle('active', tool.enabled);
-                    this.applyToolsVisibility();
-                }
-            });
-        });
-
-        // 拖拽排序
-        let draggedItem = null;
-        list.querySelectorAll('.tool-config-row').forEach(row => {
-            row.addEventListener('dragstart', (e) => {
-                draggedItem = row;
-                row.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-            });
-            row.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (row !== draggedItem) row.classList.add('drag-over');
-            });
-            row.addEventListener('dragleave', () => {
-                row.classList.remove('drag-over');
-            });
-            row.addEventListener('drop', (e) => {
-                e.preventDefault();
-                row.classList.remove('drag-over');
-                if (draggedItem && row !== draggedItem) {
-                    const cfg = Storage.getToolsConfig();
-                    const fromId = draggedItem.dataset.id;
-                    const toId = row.dataset.id;
-                    const fromIdx = cfg.findIndex(t => t.id === fromId);
-                    const toIdx = cfg.findIndex(t => t.id === toId);
-                    const [moved] = cfg.splice(fromIdx, 1);
-                    cfg.splice(toIdx, 0, moved);
-                    Storage.setToolsConfig(cfg);
-                    this.renderToolsConfig();
-                    this.applyToolsOrder();
-                }
-            });
-            row.addEventListener('dragend', () => {
-                row.classList.remove('dragging');
-                list.querySelectorAll('.tool-config-row').forEach(r => r.classList.remove('drag-over'));
-                draggedItem = null;
-            });
-        });
-    },
-
-    applyToolsVisibility() {
-        const config = Storage.getToolsConfig();
-        config.forEach(tool => {
-            const el = document.getElementById('tool-' + tool.id);
-            if (el) el.style.display = tool.enabled ? '' : 'none';
-        });
-    },
+    toggleSettings() { document.getElementById('settingsPanel').classList.toggle('active'); if (document.getElementById('settingsPanel').classList.contains('active')) this.renderSettingsLists(); },
+    toggleWallpaperPanel() { const p = document.getElementById('wallpaperPanel'); p.classList.toggle('active'); if (p.classList.contains('active')) { this.updateWallpaperPreview(); this.renderWallpaperHistory(); } },
+    closeModal(id) { document.getElementById(id).classList.remove('active'); },
 
     toggleTools() {
         const section = document.getElementById('toolsSection');
@@ -621,92 +334,97 @@ const App = {
         const collapsed = section.classList.toggle('collapsed');
         arrow.classList.toggle('collapsed', collapsed);
         Storage.set('tools_collapsed', collapsed);
-        Storage.set('tools_collapsed_explicit', true);
     },
 
-    applyToolsOrder() {
-        const config = Storage.getToolsConfig();
-        const section = document.getElementById('toolsSection');
-        config.forEach(tool => {
-            const el = document.getElementById('tool-' + tool.id);
-            if (el) section.appendChild(el);
+    // === Settings Lists ===
+    async renderSettingsLists() {
+        const categoryList = document.getElementById('categoryList');
+        const order = (await Storage.get('category_order')) || [];
+        this._cache_category_order = order;
+        const catsFromItems = [...new Set(this.navItems.map(item => item.category || '常用'))];
+        const allCats = [...new Set([...order, ...catsFromItems])];
+        const categories = allCats.filter(c => order.includes(c)).concat(allCats.filter(c => !order.includes(c)));
+
+        categoryList.innerHTML = categories.map(cat => {
+            const count = this.navItems.filter(item => (item.category || '常用') === cat).length;
+            return `<div class="category-row" data-category="${cat}"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><div class="category-name">${cat}</div><div class="category-count">${count}</div><div class="item-actions"><button class="edit-item" data-category="${cat}"><i class="fas fa-edit"></i></button><button class="delete-item" data-category="${cat}"><i class="fas fa-trash"></i></button></div></div>`;
+        }).join('');
+        categoryList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.editCategory(btn.dataset.category)));
+        categoryList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => this.deleteCategory(btn.dataset.category)));
+
+        let draggedCat = null;
+        categoryList.querySelectorAll('.category-row').forEach(row => {
+            row.setAttribute('draggable', 'true');
+            row.addEventListener('dragstart', (e) => { draggedCat = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+            row.addEventListener('dragover', (e) => { e.preventDefault(); if (row !== draggedCat) row.classList.add('drag-over'); });
+            row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+            row.addEventListener('drop', async (e) => {
+                e.preventDefault(); row.classList.remove('drag-over');
+                if (draggedCat && row !== draggedCat) {
+                    const cats = [...categories];
+                    const fi = cats.indexOf(draggedCat.dataset.category), ti = cats.indexOf(row.dataset.category);
+                    const [m] = cats.splice(fi, 1); cats.splice(ti, 0, m);
+                    await Storage.set('category_order', cats);
+                    this._cache_category_order = cats;
+                    this.renderSettingsLists();
+                    this.renderCategoryTabs();
+                }
+            });
+            row.addEventListener('dragend', () => { row.classList.remove('dragging'); categoryList.querySelectorAll('.category-row').forEach(r => r.classList.remove('drag-over')); draggedCat = null; });
         });
-    },
 
-    renderDnsMap() {
-        const list = document.getElementById('dnsMapList');
-        const maps = Storage.getDnsMap();
-        if (maps.length === 0) {
-            list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:13px;padding:12px;opacity:0.5;">暂无映射规则</div>';
-            return;
-        }
-        list.innerHTML = maps.map((m, i) => `
-            <div class="dns-map-row" data-index="${i}">
-                <div class="dns-map-icon"><i class="fas fa-server"></i></div>
-                <div class="dns-map-info">
-                    <div>
-                        <span class="dns-map-domain">${m.domain}</span>
-                        <span class="dns-map-arrow"><i class="fas fa-arrow-right"></i></span>
-                        <span class="dns-map-ip">${m.ip}</span>
-                    </div>
-                    ${m.note ? '<div class="dns-map-note">' + m.note + '</div>' : ''}
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item" data-index="${i}"><i class="fas fa-edit"></i></button>
-                    <button class="delete-item" data-index="${i}"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `).join('');
-        list.querySelectorAll('.edit-item').forEach(btn => {
-            btn.addEventListener('click', () => this.editDnsMap(parseInt(btn.dataset.index)));
-        });
-        list.querySelectorAll('.delete-item').forEach(btn => {
-            btn.addEventListener('click', () => this.deleteDnsMap(parseInt(btn.dataset.index)));
-        });
-    },
+        const navList = document.getElementById('navItemsList');
+        navList.innerHTML = this.navItems.map(item => {
+            const isImg = item.icon && !item.icon.startsWith('fa-');
+            const iconHtml = isImg ? `<img src="${item.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<i class="${item.icon}"></i>`;
+            return `<div class="nav-item-row" data-id="${item.id}"><div class="item-icon" style="background:${item.color};">${iconHtml}</div><div class="item-info"><div class="item-name">${item.name}</div><div class="item-url">${item.category||'常用'} · ${item.url}</div></div><div class="item-actions"><button class="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i></button></div></div>`;
+        }).join('');
+        navList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.editNavItem(btn.dataset.id)));
+        navList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => this.deleteNavItem(btn.dataset.id)));
 
-    openDnsModal(index) {
-        const isEdit = index !== undefined;
-        document.getElementById('dnsModalTitle').textContent = isEdit ? '编辑 DNS 映射' : '添加 DNS 映射';
-        const maps = Storage.getDnsMap();
-        document.getElementById('dnsEditIndex').value = isEdit ? index : '';
-        document.getElementById('dnsEditDomain').value = isEdit ? maps[index].domain : '';
-        document.getElementById('dnsEditIp').value = isEdit ? maps[index].ip : '';
-        document.getElementById('dnsEditNote').value = isEdit ? (maps[index].note || '') : '';
-        document.getElementById('dnsModal').classList.add('active');
-    },
+        const engineList = document.getElementById('engineList');
+        engineList.innerHTML = this.engines.map(engine => `<div class="engine-row" data-id="${engine.id}"><div class="item-icon" style="background:${engine.color};"><i class="${engine.icon}"></i></div><div class="item-info"><div class="item-name">${engine.name}</div><div class="item-url">${engine.url}</div></div><div class="item-actions"><button class="edit-item" data-id="${engine.id}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${engine.id}"><i class="fas fa-trash"></i></button></div></div>`).join('');
+        engineList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.editEngine(btn.dataset.id)));
+        engineList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => this.deleteEngine(btn.dataset.id)));
 
-    editDnsMap(index) {
-        this.openDnsModal(index);
-    },
-
-    saveDnsMap(e) {
-        e.preventDefault();
-        const index = document.getElementById('dnsEditIndex').value;
-        const domain = document.getElementById('dnsEditDomain').value.trim();
-        const ip = document.getElementById('dnsEditIp').value.trim();
-        const note = document.getElementById('dnsEditNote').value.trim();
-        if (!domain || !ip) return;
-        const maps = Storage.getDnsMap();
-        const entry = { domain, ip, note };
-        if (index !== '') {
-            maps[parseInt(index)] = entry;
-        } else {
-            maps.push(entry);
-        }
-        Storage.setDnsMap(maps);
         this.renderDnsMap();
-        this.closeModal('dnsModal');
+        this.renderToolsConfig();
     },
 
-    deleteDnsMap(index) {
-        if (!confirm('确定删除这条映射规则？')) return;
-        const maps = Storage.getDnsMap();
-        maps.splice(index, 1);
-        Storage.setDnsMap(maps);
-        this.renderDnsMap();
+    async renderToolsConfig() {
+        const list = document.getElementById('toolsConfigList');
+        const config = await Storage.get('tools_config') || [];
+        list.innerHTML = config.map(tool => `<div class="tool-config-row" draggable="true" data-id="${tool.id}"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><div class="tool-config-icon"><i class="${tool.icon}"></i></div><span class="tool-config-name">${tool.name}</span><button class="toggle-switch ${tool.enabled?'active':''}" data-id="${tool.id}"></button></div>`).join('');
+        list.querySelectorAll('.toggle-switch').forEach(btn => btn.addEventListener('click', async () => {
+            const cfg = await Storage.get('tools_config') || [];
+            const t = cfg.find(x => x.id === btn.dataset.id);
+            if (t) { t.enabled = !t.enabled; await Storage.set('tools_config', cfg); btn.classList.toggle('active', t.enabled); this.applyToolsVisibility(); }
+        }));
+        let draggedTool = null;
+        list.querySelectorAll('.tool-config-row').forEach(row => {
+            row.addEventListener('dragstart', (e) => { draggedTool = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+            row.addEventListener('dragover', (e) => { e.preventDefault(); if (row !== draggedTool) row.classList.add('drag-over'); });
+            row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+            row.addEventListener('drop', async (e) => {
+                e.preventDefault(); row.classList.remove('drag-over');
+                if (draggedTool && row !== draggedTool) {
+                    const cfg = await Storage.get('tools_config') || [];
+                    const fi = cfg.findIndex(t => t.id === draggedTool.dataset.id), ti = cfg.findIndex(t => t.id === row.dataset.id);
+                    const [m] = cfg.splice(fi, 1); cfg.splice(ti, 0, m);
+                    await Storage.set('tools_config', cfg);
+                    this.renderToolsConfig();
+                }
+            });
+            row.addEventListener('dragend', () => { row.classList.remove('dragging'); list.querySelectorAll('.tool-config-row').forEach(r => r.classList.remove('drag-over')); draggedTool = null; });
+        });
     },
 
+    async applyToolsVisibility() {
+        const config = await Storage.get('tools_config') || [];
+        config.forEach(tool => { const el = document.getElementById('tool-' + tool.id); if (el) el.style.display = tool.enabled ? '' : 'none'; });
+    },
+
+    // === Nav CRUD ===
     openNavModal(item) {
         document.getElementById('modalTitle').textContent = item ? '编辑导航项' : '添加导航项';
         document.getElementById('editId').value = item ? item.id : '';
@@ -714,156 +432,96 @@ const App = {
         document.getElementById('editUrl').value = item ? item.url : '';
         document.getElementById('editColor').value = item ? item.color : '#6366f1';
         document.getElementById('editColorHex').textContent = item ? item.color : '#6366f1';
-        const categorySelect = document.getElementById('editCategory');
-        const categories = Storage.getCategories();
-        categorySelect.innerHTML = '<option value="" disabled' + (!item ? ' selected' : '') + '>请选择分类</option>' +
-            categories.map(cat =>
-                '<option value="' + cat + '" ' + (item && item.category === cat ? 'selected' : '') + '>' + cat + '</option>'
-            ).join('');
-        if (item) categorySelect.value = item.category;
-
-        // 图标处理
+        const sel = document.getElementById('editCategory');
+        const cats = [...new Set(this.navItems.map(i => i.category || '常用'))];
+        sel.innerHTML = '<option value="" disabled' + (!item ? ' selected' : '') + '>请选择分类</option>' + cats.map(c => `<option value="${c}" ${item && item.category === c ? 'selected' : ''}>${c}</option>`).join('');
+        if (item) sel.value = item.category;
         this.selectedIcon = item ? item.icon : 'fa-solid fa-link';
         const area = document.getElementById('iconUploadArea');
         const preview = document.getElementById('iconPreview');
         const clearBtn = area.querySelector('.icon-upload-clear');
         if (clearBtn) clearBtn.remove();
-
         if (item && item.icon && !item.icon.startsWith('fa-')) {
-            // 自定义图片图标
-            area.classList.add('active');
-            preview.innerHTML = '<img src="' + item.icon + '">';
+            area.classList.add('active'); preview.innerHTML = `<img src="${item.icon}">`;
             document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
-            const cb = document.createElement('button');
-            cb.className = 'icon-upload-clear';
-            cb.innerHTML = '<i class="fas fa-times"></i>';
-            cb.addEventListener('click', (ev) => { ev.stopPropagation(); this.clearIconUpload(); });
-            area.appendChild(cb);
+            const cb = document.createElement('button'); cb.className = 'icon-upload-clear'; cb.innerHTML = '<i class="fas fa-times"></i>';
+            cb.addEventListener('click', (ev) => { ev.stopPropagation(); this.clearIconUpload(); }); area.appendChild(cb);
         } else {
-            area.classList.remove('active');
-            preview.innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
-            document.querySelectorAll('.icon-option').forEach(opt => {
-                opt.classList.toggle('selected', opt.dataset.icon === this.selectedIcon);
-            });
+            area.classList.remove('active'); preview.innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
+            document.querySelectorAll('.icon-option').forEach(opt => opt.classList.toggle('selected', opt.dataset.icon === this.selectedIcon));
         }
         document.getElementById('editModal').classList.add('active');
     },
 
-    editNavItem(id) {
-        const item = Storage.getNavItems().find(i => i.id == id);
-        if (item) this.openNavModal(item);
-    },
+    editNavItem(id) { const item = this.navItems.find(i => i.id == id); if (item) this.openNavModal(item); },
 
-    saveNavItem(e) {
+    async saveNavItem(e) {
         e.preventDefault();
         const id = document.getElementById('editId').value;
-        const items = Storage.getNavItems();
-        const newItem = {
-            id: id ? parseInt(id) : Date.now(),
+        const item = {
             name: document.getElementById('editName').value,
             url: document.getElementById('editUrl').value,
             icon: this.selectedIcon,
             color: document.getElementById('editColor').value,
             category: document.getElementById('editCategory').value
         };
-        if (id) {
-            const index = items.findIndex(i => i.id == id);
-            if (index !== -1) items[index] = newItem;
-        } else {
-            items.push(newItem);
-        }
-        Storage.setNavItems(items);
-        this.renderCategoryTabs();
-        this.renderNavItems();
-        this.renderSettingsLists();
+        if (id) item.id = parseInt(id);
+        await Storage.saveNavItem(item);
+        await this.refreshNav();
         this.closeModal('editModal');
     },
 
-    deleteNavItem(id) {
-        if (!confirm('确定删除这个导航项吗？')) return;
-        const items = Storage.getNavItems().filter(i => i.id != id);
-        Storage.setNavItems(items);
-        this.renderNavItems();
-        this.renderSettingsLists();
+    async deleteNavItem(id) {
+        if (!confirm('确定删除？')) return;
+        await Storage.deleteNavItem(id);
+        await this.refreshNav();
     },
 
-    openCategoryModal(category) {
-        document.getElementById('categoryModalTitle').textContent = category ? '编辑分类' : '添加分类';
-        document.getElementById('categoryEditId').value = category || '';
-        document.getElementById('categoryEditName').value = category || '';
+    // === Category CRUD ===
+    openCategoryModal(cat) {
+        document.getElementById('categoryModalTitle').textContent = cat ? '编辑分类' : '添加分类';
+        document.getElementById('categoryEditId').value = cat || '';
+        document.getElementById('categoryEditName').value = cat || '';
         document.getElementById('categoryModal').classList.add('active');
     },
+    editCategory(cat) { this.openCategoryModal(cat); },
 
-    editCategory(category) {
-        this.openCategoryModal(category);
-    },
-
-    saveCategory(e) {
+    async saveCategory(e) {
         e.preventDefault();
         const oldName = document.getElementById('categoryEditId').value;
         const newName = document.getElementById('categoryEditName').value.trim();
         if (!newName) return;
-        const categories = Storage.getCategories();
-        const items = Storage.getNavItems();
+        const order = (await Storage.get('category_order')) || [...new Set(this.navItems.map(i => i.category || '常用'))];
         if (oldName) {
-            if (oldName !== newName && categories.includes(newName)) {
-                alert('分类名称已存在');
-                return;
-            }
-            items.forEach(item => {
-                if (item.category === oldName) item.category = newName;
-            });
-            if (this.currentCategory === oldName) {
-                this.currentCategory = newName;
-                Storage.setCurrentCategory(newName);
-            }
-            const order = Storage.getCategoryOrder();
-            if (order) {
-                const idx = order.indexOf(oldName);
-                if (idx !== -1) order[idx] = newName;
-                Storage.setCategoryOrder(order);
-            }
+            if (oldName !== newName && order.includes(newName)) { alert('分类已存在'); return; }
+            for (const item of this.navItems) { if (item.category === oldName) { item.category = newName; await Storage.saveNavItem(item); } }
+            const idx = order.indexOf(oldName); if (idx !== -1) order[idx] = newName;
+            if (this.currentCategory === oldName) { this.currentCategory = newName; await Storage.set('current_category', newName); }
         } else {
-            if (categories.includes(newName)) {
-                alert('分类名称已存在');
-                return;
-            }
-            const order = Storage.getCategoryOrder() || categories;
+            if (order.includes(newName)) { alert('分类已存在'); return; }
             order.push(newName);
-            Storage.setCategoryOrder(order);
         }
-        Storage.setNavItems(items);
-        this.renderCategoryTabs();
-        this.renderNavItems();
-        this.renderSettingsLists();
+        await Storage.set('category_order', order);
+        this._cache_category_order = order;
+        await this.refreshNav();
         this.closeModal('categoryModal');
     },
 
-    deleteCategory(category) {
-        const items = Storage.getNavItems();
-        const categoryItems = items.filter(item => (item.category || '常用') === category);
-        if (categoryItems.length > 0) {
-            if (!confirm('分类"' + category + '"下有 ' + categoryItems.length + ' 个网站，删除分类将把它们移到"常用"，是否继续？')) return;
-            items.forEach(item => {
-                if ((item.category || '常用') === category) item.category = '常用';
-            });
-            Storage.setNavItems(items);
+    async deleteCategory(cat) {
+        const items = this.navItems.filter(i => (i.category || '常用') === cat);
+        if (items.length > 0) {
+            if (!confirm(`分类"${cat}"下有 ${items.length} 个网站，将移到"常用"，继续？`)) return;
+            for (const item of items) { item.category = '常用'; await Storage.saveNavItem(item); }
         }
-        const order = Storage.getCategoryOrder();
-        if (order) {
-            const idx = order.indexOf(category);
-            if (idx !== -1) order.splice(idx, 1);
-            Storage.setCategoryOrder(order);
-        }
-        if (this.currentCategory === category) {
-            this.currentCategory = '常用';
-            Storage.setCurrentCategory('常用');
-        }
-        this.renderCategoryTabs();
-        this.renderNavItems();
-        this.renderSettingsLists();
+        const order = (await Storage.get('category_order')) || [];
+        const idx = order.indexOf(cat); if (idx !== -1) order.splice(idx, 1);
+        await Storage.set('category_order', order);
+        this._cache_category_order = order;
+        if (this.currentCategory === cat) { this.currentCategory = '常用'; await Storage.set('current_category', '常用'); }
+        await this.refreshNav();
     },
 
+    // === Engine CRUD ===
     openEngineModal(engine) {
         document.getElementById('engineModalTitle').textContent = engine ? '编辑搜索引擎' : '添加搜索引擎';
         document.getElementById('engineEditId').value = engine ? engine.id : '';
@@ -873,635 +531,377 @@ const App = {
         document.getElementById('engineEditColor').value = engine ? engine.color : '#6366f1';
         document.getElementById('engineModal').classList.add('active');
     },
+    editEngine(id) { const e = this.engines.find(x => x.id === id); if (e) this.openEngineModal(e); },
 
-    editEngine(id) {
-        const engine = Storage.getEngines().find(e => e.id === id);
-        if (engine) this.openEngineModal(engine);
-    },
-
-    saveEngine(e) {
+    async saveEngine(e) {
         e.preventDefault();
         const id = document.getElementById('engineEditId').value;
-        const engines = Storage.getEngines();
-        const newEngine = {
+        const engine = {
             id: id || document.getElementById('engineEditName').value.toLowerCase().replace(/\s/g, ''),
             name: document.getElementById('engineEditName').value,
             url: document.getElementById('engineEditUrl').value,
             icon: document.getElementById('engineEditIcon').value || 'fa-solid fa-magnifying-glass',
             color: document.getElementById('engineEditColor').value
         };
-        if (id) {
-            const index = engines.findIndex(e => e.id === id);
-            if (index !== -1) engines[index] = newEngine;
-        } else {
-            engines.push(newEngine);
-        }
-        Storage.setEngines(engines);
-        this.renderEngines();
-        this.renderSettingsLists();
+        if (id) await Storage.updateEngine(id, engine);
+        else await Storage.saveEngine(engine);
+        await this.refreshEngines();
         this.closeModal('engineModal');
     },
 
-    deleteEngine(id) {
-        if (!confirm('确定删除这个搜索引擎吗？')) return;
-        const engines = Storage.getEngines().filter(e => e.id !== id);
-        Storage.setEngines(engines);
-        if (Storage.getCurrentEngine() === id) {
-            Storage.setCurrentEngine(engines[0]?.id || 'google');
-        }
-        this.renderEngines();
-        this.renderSettingsLists();
+    async deleteEngine(id) {
+        if (!confirm('确定删除？')) return;
+        await Storage.deleteEngine(id);
+        await this.refreshEngines();
     },
 
-    closeModal(id) {
-        document.getElementById(id).classList.remove('active');
+    // === DNS Map ===
+    openDnsModal(index) {
+        const isEdit = index !== undefined;
+        document.getElementById('dnsModalTitle').textContent = isEdit ? '编辑 DNS 映射' : '添加 DNS 映射';
+        const maps = this._cache_dns || [];
+        document.getElementById('dnsEditIndex').value = isEdit ? index : '';
+        document.getElementById('dnsEditDomain').value = isEdit ? maps[index].domain : '';
+        document.getElementById('dnsEditIp').value = isEdit ? maps[index].ip : '';
+        document.getElementById('dnsEditNote').value = isEdit ? (maps[index].note || '') : '';
+        document.getElementById('dnsModal').classList.add('active');
     },
 
+    async saveDnsMap(e) {
+        e.preventDefault();
+        const index = document.getElementById('dnsEditIndex').value;
+        const entry = { domain: document.getElementById('dnsEditDomain').value.trim(), ip: document.getElementById('dnsEditIp').value.trim(), note: document.getElementById('dnsEditNote').value.trim() };
+        if (!entry.domain || !entry.ip) return;
+        const maps = this._cache_dns || [];
+        if (index !== '') maps[parseInt(index)] = entry; else maps.push(entry);
+        await Storage.set('dns_map', maps);
+        this._cache_dns = maps;
+        this.renderDnsMap();
+        this.closeModal('dnsModal');
+    },
+
+    async renderDnsMap() {
+        this._cache_dns = await Storage.get('dns_map') || [];
+        const list = document.getElementById('dnsMapList');
+        if (this._cache_dns.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:12px;opacity:0.4;">暂无映射</div>'; return; }
+        list.innerHTML = this._cache_dns.map((m, i) => `<div class="dns-map-row" data-index="${i}"><div class="dns-map-icon"><i class="fas fa-server"></i></div><div class="dns-map-info"><div><span class="dns-map-domain">${m.domain}</span><span class="dns-map-arrow"><i class="fas fa-arrow-right"></i></span><span class="dns-map-ip">${m.ip}</span></div>${m.note ? `<div class="dns-map-note">${m.note}</div>` : ''}</div><div class="item-actions"><button class="edit-item" data-index="${i}"><i class="fas fa-edit"></i></button><button class="delete-item" data-index="${i}"><i class="fas fa-trash"></i></button></div></div>`).join('');
+        list.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.openDnsModal(parseInt(btn.dataset.index))));
+        list.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', async () => { if (!confirm('删除？')) return; this._cache_dns.splice(parseInt(btn.dataset.index), 1); await Storage.set('dns_map', this._cache_dns); this.renderDnsMap(); }));
+    },
+
+    // === Icon Upload ===
     handleIconUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 200 * 1024) {
-            alert('图片大小不能超过 200KB');
-            return;
-        }
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 200 * 1024) { alert('图片不能超过 200KB'); return; }
         const reader = new FileReader();
-        reader.onload = (event) => {
-            this.selectedIcon = event.target.result;
+        reader.onload = (ev) => {
+            this.selectedIcon = ev.target.result;
             const area = document.getElementById('iconUploadArea');
-            const preview = document.getElementById('iconPreview');
+            document.getElementById('iconPreview').innerHTML = `<img src="${ev.target.result}">`;
             area.classList.add('active');
-            preview.innerHTML = '<img src="' + event.target.result + '">';
-            // 移除预设图标选中状态
             document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
-            // 添加清除按钮
             if (!area.querySelector('.icon-upload-clear')) {
-                const clearBtn = document.createElement('button');
-                clearBtn.className = 'icon-upload-clear';
-                clearBtn.innerHTML = '<i class="fas fa-times"></i>';
-                clearBtn.addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    this.clearIconUpload();
-                });
-                area.appendChild(clearBtn);
+                const cb = document.createElement('button'); cb.className = 'icon-upload-clear'; cb.innerHTML = '<i class="fas fa-times"></i>';
+                cb.addEventListener('click', (x) => { x.stopPropagation(); this.clearIconUpload(); }); area.appendChild(cb);
             }
         };
-        reader.readAsDataURL(file);
-        e.target.value = '';
+        reader.readAsDataURL(file); e.target.value = '';
     },
 
     clearIconUpload() {
         this.selectedIcon = 'fa-solid fa-link';
         const area = document.getElementById('iconUploadArea');
-        const preview = document.getElementById('iconPreview');
         area.classList.remove('active');
-        preview.innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
-        const clearBtn = area.querySelector('.icon-upload-clear');
-        if (clearBtn) clearBtn.remove();
+        document.getElementById('iconPreview').innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
+        const cb = area.querySelector('.icon-upload-clear'); if (cb) cb.remove();
         document.querySelector('.icon-option[data-icon="fa-solid fa-link"]').classList.add('selected');
     },
 
-    exportConfig() {
-        const data = Storage.exportData();
+    // === Export/Import/Reset ===
+    async exportConfig() {
+        const data = { navItems: this.navItems, engines: this.engines, exportTime: new Date().toISOString() };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'navigation-config-' + new Date().toISOString().slice(0, 10) + '.json';
-        a.click();
-        URL.revokeObjectURL(url);
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'nav-config-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
     },
 
-    importConfig(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    async importConfig(e) {
+        const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (ev) => {
             try {
-                const data = JSON.parse(event.target.result);
-                if (confirm('导入将覆盖当前配置，是否继续？')) {
-                    Storage.importData(data);
-                    this.currentCategory = Storage.getCurrentCategory();
-                    this.currentPosition = Storage.getLayoutPosition();
-                    this.renderCategoryTabs();
-                    this.renderNavItems();
-                    this.renderEngines();
-                    this.renderSettingsLists();
-                    this.selectEngine(Storage.getCurrentEngine());
-                    this.applyLayoutPosition();
+                const data = JSON.parse(ev.target.result);
+                if (confirm('导入将覆盖当前配置？')) {
+                    if (data.navItems) for (const item of data.navItems) await Storage.saveNavItem(item);
+                    if (data.engines) for (const engine of data.engines) await Storage.saveEngine(engine);
+                    await this.refreshNav(); await this.refreshEngines();
                     alert('导入成功！');
                 }
-            } catch (err) {
-                alert('导入失败：文件格式错误');
-            }
+            } catch (err) { alert('文件格式错误'); }
         };
-        reader.readAsText(file);
-        e.target.value = '';
+        reader.readAsText(file); e.target.value = '';
     },
 
     resetData() {
-        if (!confirm('确定要重置所有数据吗？此操作不可恢复！')) return;
-        Storage.clear();
-        Storage.ensureDefaults();
-        this.currentCategory = '常用';
-        this.currentPosition = 'center';
-        this.renderCategoryTabs();
-        this.renderNavItems();
-        this.renderEngines();
-        this.renderSettingsLists();
-        this.selectEngine(Storage.getCurrentEngine());
-        this.applyLayoutPosition();
-        this.resetWallpaper();
-        alert('已重置为默认配置');
+        if (!confirm('确定重置？')) return;
+        location.reload();
     },
 
+    // === Wallpaper ===
     initWallpaper() {
-        const wallpaper = Storage.getWallpaper();
-        if (wallpaper && wallpaper.url) {
-            document.body.style.backgroundImage = 'url(' + wallpaper.url + ')';
-            document.body.classList.add('wallpaper-active');
-        }
+        this._loadWallpaper();
         this.updateWallpaperPreview();
         this.renderWallpaperHistory();
     },
 
-    toggleWallpaperPanel() {
-        const panel = document.getElementById('wallpaperPanel');
-        panel.classList.toggle('active');
-        if (panel.classList.contains('active')) {
-            this.updateWallpaperPreview();
-            this.renderWallpaperHistory();
-        }
+    async _loadWallpaper() {
+        const wp = await Storage.get('wallpaper');
+        if (wp && wp.url) { document.body.style.backgroundImage = `url(${wp.url})`; document.body.classList.add('wallpaper-active'); }
     },
 
-    updateWallpaperPreview() {
-        const wallpaper = Storage.getWallpaper();
+    async updateWallpaperPreview() {
+        const wp = await Storage.get('wallpaper');
         const preview = document.getElementById('currentWallpaperPreview');
-        if (wallpaper && wallpaper.url) {
-            preview.src = wallpaper.url;
-        } else {
-            preview.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect fill="#667eea" width="400" height="200"/><text fill="white" font-family="Arial" font-size="20" text-anchor="middle" x="200" y="105">默认渐变背景</text></svg>');
-        }
+        preview.src = (wp && wp.url) ? wp.url : "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect fill="%23667eea" width="400" height="200"/><text fill="white" font-family="Arial" font-size="20" text-anchor="middle" x="200" y="105">默认背景</text></svg>');
     },
 
     async fetchBingWallpaper() {
         try {
-            const response = await fetch('https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN');
-            const data = await response.json();
-            const imageUrl = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
-            document.body.style.backgroundImage = 'url(' + imageUrl + ')';
+            const res = await fetch('https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN');
+            const data = await res.json();
+            const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
+            document.body.style.backgroundImage = `url(${url})`;
             document.body.classList.add('wallpaper-active');
-            Storage.setWallpaper({ url: imageUrl, timestamp: Date.now() });
-            Storage.addToWallpaperHistory({ url: imageUrl, name: data.images[0].copyright });
-            this.renderWallpaperHistory();
-            this.updateWallpaperPreview();
-        } catch (error) {
-            alert('获取壁纸失败，请稍后重试');
-        }
+            await Storage.set('wallpaper', { url, timestamp: Date.now() });
+            const hist = await Storage.get('wallpaper_history') || [];
+            hist.unshift({ url, name: data.images[0].copyright });
+            if (hist.length > 12) hist.pop();
+            await Storage.set('wallpaper_history', hist);
+            this.updateWallpaperPreview(); this.renderWallpaperHistory();
+        } catch (e) { alert('获取壁纸失败'); }
     },
 
     async fetchRandomBingWallpaper() {
         try {
-            const randomIndex = Math.floor(Math.random() * 8);
-            const response = await fetch('https://cn.bing.com/HPImageArchive.aspx?format=js&idx=' + randomIndex + '&n=1&mkt=zh-CN');
-            const data = await response.json();
-            const imageUrl = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
-            document.body.style.backgroundImage = 'url(' + imageUrl + ')';
+            const idx = Math.floor(Math.random() * 8);
+            const res = await fetch(`https://cn.bing.com/HPImageArchive.aspx?format=js&idx=${idx}&n=1&mkt=zh-CN`);
+            const data = await res.json();
+            const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
+            document.body.style.backgroundImage = `url(${url})`;
             document.body.classList.add('wallpaper-active');
-            Storage.setWallpaper({ url: imageUrl, timestamp: Date.now() });
-            Storage.addToWallpaperHistory({ url: imageUrl, name: data.images[0].copyright });
-            this.renderWallpaperHistory();
-            this.updateWallpaperPreview();
-        } catch (error) {
-            alert('获取壁纸失败，请稍后重试');
-        }
+            await Storage.set('wallpaper', { url, timestamp: Date.now() });
+            const hist = await Storage.get('wallpaper_history') || [];
+            hist.unshift({ url, name: data.images[0].copyright });
+            if (hist.length > 12) hist.pop();
+            await Storage.set('wallpaper_history', hist);
+            this.updateWallpaperPreview(); this.renderWallpaperHistory();
+        } catch (e) { alert('获取壁纸失败'); }
     },
 
-    uploadWallpaper(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    async uploadWallpaper(e) {
+        const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
-        reader.onload = (event) => {
-            document.body.style.backgroundImage = 'url(' + event.target.result + ')';
+        reader.onload = async (ev) => {
+            document.body.style.backgroundImage = `url(${ev.target.result})`;
             document.body.classList.add('wallpaper-active');
-            Storage.setWallpaper({ url: event.target.result, timestamp: Date.now() });
-            Storage.addToWallpaperHistory({ url: event.target.result, name: file.name });
-            this.renderWallpaperHistory();
-            this.updateWallpaperPreview();
+            await Storage.set('wallpaper', { url: ev.target.result, timestamp: Date.now() });
+            const hist = await Storage.get('wallpaper_history') || [];
+            hist.unshift({ url: ev.target.result, name: file.name });
+            if (hist.length > 12) hist.pop();
+            await Storage.set('wallpaper_history', hist);
+            this.updateWallpaperPreview(); this.renderWallpaperHistory();
         };
-        reader.readAsDataURL(file);
-        e.target.value = '';
+        reader.readAsDataURL(file); e.target.value = '';
     },
 
-    resetWallpaper() {
+    async resetWallpaper() {
         document.body.style.backgroundImage = '';
         document.body.classList.remove('wallpaper-active');
-        Storage.removeWallpaper();
+        await Storage.set('wallpaper', null);
         this.updateWallpaperPreview();
     },
 
-    renderWallpaperHistory() {
-        const history = Storage.getWallpaperHistory();
-        const currentWallpaper = Storage.getWallpaper();
+    async renderWallpaperHistory() {
+        const hist = await Storage.get('wallpaper_history') || [];
+        const cur = await Storage.get('wallpaper');
         const grid = document.querySelector('.history-grid');
-        if (history.length === 0) {
-            document.getElementById('wallpaperHistory').style.display = 'none';
-            return;
-        }
+        if (hist.length === 0) { document.getElementById('wallpaperHistory').style.display = 'none'; return; }
         document.getElementById('wallpaperHistory').style.display = 'block';
-        grid.innerHTML = history.map(item => {
-            const isActive = currentWallpaper && currentWallpaper.url === item.url;
-            return '<div class="history-item ' + (isActive ? 'active' : '') + '" data-url="' + item.url + '"><img src="' + item.url + '" alt="' + (item.name || '壁纸') + '"></div>';
-        }).join('');
-        grid.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const url = item.dataset.url;
-                document.body.style.backgroundImage = 'url(' + url + ')';
-                document.body.classList.add('wallpaper-active');
-                Storage.setWallpaper({ url: url, timestamp: Date.now() });
-                this.renderWallpaperHistory();
-                this.updateWallpaperPreview();
-            });
-        });
+        grid.innerHTML = hist.map(item => `<div class="history-item ${cur && cur.url === item.url ? 'active' : ''}" data-url="${item.url}"><img src="${item.url}" alt="${item.name || ''}"></div>`).join('');
+        grid.querySelectorAll('.history-item').forEach(item => item.addEventListener('click', async () => {
+            document.body.style.backgroundImage = `url(${item.dataset.url})`;
+            document.body.classList.add('wallpaper-active');
+            await Storage.set('wallpaper', { url: item.dataset.url, timestamp: Date.now() });
+            this.renderWallpaperHistory(); this.updateWallpaperPreview();
+        }));
     },
 
-    // ===== 时钟 =====
-    initClock() {
-        this.updateClock();
-        setInterval(() => this.updateClock(), 1000);
-    },
-
+    // === Tools: Clock ===
+    initClock() { this.updateClock(); setInterval(() => this.updateClock(), 1000); },
     updateClock() {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById('clockTime').textContent = hours + ':' + minutes + ':' + seconds;
-
-        const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-        const date = now.getDate();
-        const weekday = weekdays[now.getDay()];
-        document.getElementById('clockDate').textContent = year + '年' + month + '月' + date + '日 星期' + weekday;
+        const n = new Date(), h = String(n.getHours()).padStart(2, '0'), m = String(n.getMinutes()).padStart(2, '0'), s = String(n.getSeconds()).padStart(2, '0');
+        document.getElementById('clockTime').textContent = `${h}:${m}:${s}`;
+        const wd = ['日','一','二','三','四','五','六'];
+        document.getElementById('clockDate').textContent = `${n.getFullYear()}年${n.getMonth()+1}月${n.getDate()}日 星期${wd[n.getDay()]}`;
     },
 
-    // ===== 番茄钟 =====
-    pomodoroInterval: null,
-    pomodoroTime: 25 * 60,
-    pomodoroTotal: 25 * 60,
-    pomodoroRunning: false,
-
+    // === Tools: Pomodoro ===
+    pomodoroInterval: null, pomodoroTime: 25*60, pomodoroTotal: 25*60, pomodoroRunning: false,
     initPomodoro() {
         document.getElementById('pomodoroStart').addEventListener('click', () => this.startPomodoro());
         document.getElementById('pomodoroPause').addEventListener('click', () => this.pausePomodoro());
         document.getElementById('pomodoroReset').addEventListener('click', () => this.resetPomodoro());
-        document.querySelectorAll('.pomodoro-mode').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (this.pomodoroRunning) return;
-                document.querySelectorAll('.pomodoro-mode').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.pomodoroTotal = parseInt(btn.dataset.minutes) * 60;
-                this.pomodoroTime = this.pomodoroTotal;
-                this.updatePomodoroDisplay();
-            });
-        });
+        document.querySelectorAll('.pomodoro-mode').forEach(btn => btn.addEventListener('click', () => {
+            if (this.pomodoroRunning) return;
+            document.querySelectorAll('.pomodoro-mode').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            this.pomodoroTotal = parseInt(btn.dataset.minutes) * 60;
+            this.pomodoroTime = this.pomodoroTotal;
+            this.updatePomodoroDisplay();
+        }));
     },
-
     startPomodoro() {
-        if (this.pomodoroRunning) return;
-        this.pomodoroRunning = true;
+        if (this.pomodoroRunning) return; this.pomodoroRunning = true;
         document.getElementById('pomodoroStart').style.display = 'none';
         document.getElementById('pomodoroPause').style.display = 'flex';
         this.pomodoroInterval = setInterval(() => {
-            this.pomodoroTime--;
-            this.updatePomodoroDisplay();
-            if (this.pomodoroTime <= 0) {
-                this.pausePomodoro();
-                if (Notification.permission === 'granted') {
-                    new Notification('番茄钟', { body: '时间到！休息一下吧' });
-                }
-            }
+            this.pomodoroTime--; this.updatePomodoroDisplay();
+            if (this.pomodoroTime <= 0) { this.pausePomodoro(); if (Notification.permission === 'granted') new Notification('番茄钟', { body: '时间到！' }); }
         }, 1000);
     },
-
-    pausePomodoro() {
-        this.pomodoroRunning = false;
-        clearInterval(this.pomodoroInterval);
-        document.getElementById('pomodoroStart').style.display = 'flex';
-        document.getElementById('pomodoroPause').style.display = 'none';
-    },
-
-    resetPomodoro() {
-        this.pausePomodoro();
-        this.pomodoroTime = this.pomodoroTotal;
-        this.updatePomodoroDisplay();
-    },
-
+    pausePomodoro() { this.pomodoroRunning = false; clearInterval(this.pomodoroInterval); document.getElementById('pomodoroStart').style.display = 'flex'; document.getElementById('pomodoroPause').style.display = 'none'; },
+    resetPomodoro() { this.pausePomodoro(); this.pomodoroTime = this.pomodoroTotal; this.updatePomodoroDisplay(); },
     updatePomodoroDisplay() {
-        const minutes = String(Math.floor(this.pomodoroTime / 60)).padStart(2, '0');
-        const seconds = String(this.pomodoroTime % 60).padStart(2, '0');
-        document.getElementById('pomodoroDisplay').textContent = minutes + ':' + seconds;
-        const progress = ((this.pomodoroTotal - this.pomodoroTime) / this.pomodoroTotal) * 100;
-        document.getElementById('pomodoroBar').style.width = progress + '%';
+        document.getElementById('pomodoroDisplay').textContent = `${String(Math.floor(this.pomodoroTime/60)).padStart(2,'0')}:${String(this.pomodoroTime%60).padStart(2,'0')}`;
+        document.getElementById('pomodoroBar').style.width = ((this.pomodoroTotal - this.pomodoroTime) / this.pomodoroTotal * 100) + '%';
     },
 
-    // ===== 待办清单 =====
+    // === Tools: Todo ===
     todos: [],
-
     initTodo() {
-        this.todos = Storage.get('todo_list') || [];
-        this.renderTodos();
+        this._loadTodos();
         document.getElementById('todoAddBtn').addEventListener('click', () => this.addTodo());
-        document.getElementById('todoInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.addTodo();
-        });
+        document.getElementById('todoInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.addTodo(); });
     },
-
-    addTodo() {
-        const input = document.getElementById('todoInput');
-        const text = input.value.trim();
-        if (!text) return;
-        this.todos.push({ id: Date.now(), text: text, done: false });
-        Storage.set('todo_list', this.todos);
-        input.value = '';
-        this.renderTodos();
+    async _loadTodos() { this.todos = await Storage.get('todo_list') || []; this.renderTodos(); },
+    async addTodo() {
+        const input = document.getElementById('todoInput'); const text = input.value.trim(); if (!text) return;
+        this.todos.push({ id: Date.now(), text, done: false });
+        await Storage.set('todo_list', this.todos); input.value = ''; this.renderTodos();
     },
-
-    toggleTodo(id) {
-        const todo = this.todos.find(t => t.id === id);
-        if (todo) todo.done = !todo.done;
-        Storage.set('todo_list', this.todos);
-        this.renderTodos();
-    },
-
-    deleteTodo(id) {
-        this.todos = this.todos.filter(t => t.id !== id);
-        Storage.set('todo_list', this.todos);
-        this.renderTodos();
-    },
-
+    async toggleTodo(id) { const t = this.todos.find(x => x.id === id); if (t) t.done = !t.done; await Storage.set('todo_list', this.todos); this.renderTodos(); },
+    async deleteTodo(id) { this.todos = this.todos.filter(t => t.id !== id); await Storage.set('todo_list', this.todos); this.renderTodos(); },
     renderTodos() {
         const list = document.getElementById('todoList');
-        const count = this.todos.filter(t => !t.done).length;
-        document.getElementById('todoCount').textContent = count;
-        list.innerHTML = this.todos.map(todo => `
-            <div class="todo-item">
-                <div class="todo-checkbox ${todo.done ? 'checked' : ''}" data-id="${todo.id}"></div>
-                <span class="todo-text ${todo.done ? 'done' : ''}">${todo.text}</span>
-                <button class="todo-delete" data-id="${todo.id}"><i class="fas fa-times"></i></button>
-            </div>
-        `).join('');
-        list.querySelectorAll('.todo-checkbox').forEach(cb => {
-            cb.addEventListener('click', () => this.toggleTodo(parseInt(cb.dataset.id)));
-        });
-        list.querySelectorAll('.todo-delete').forEach(btn => {
-            btn.addEventListener('click', () => this.deleteTodo(parseInt(btn.dataset.id)));
-        });
+        document.getElementById('todoCount').textContent = this.todos.filter(t => !t.done).length;
+        list.innerHTML = this.todos.map(t => `<div class="todo-item"><div class="todo-checkbox ${t.done?'checked':''}" data-id="${t.id}"></div><span class="todo-text ${t.done?'done':''}">${t.text}</span><button class="todo-delete" data-id="${t.id}"><i class="fas fa-times"></i></button></div>`).join('');
+        list.querySelectorAll('.todo-checkbox').forEach(cb => cb.addEventListener('click', () => this.toggleTodo(parseInt(cb.dataset.id))));
+        list.querySelectorAll('.todo-delete').forEach(btn => btn.addEventListener('click', () => this.deleteTodo(parseInt(btn.dataset.id))));
     },
 
-    // ===== 快捷笔记 =====
-    initNotes() {
-        const noteArea = document.getElementById('noteArea');
-        const status = document.getElementById('noteStatus');
-        noteArea.value = Storage.get('quick_note') || '';
+    // === Tools: Notes ===
+    async initNotes() {
+        const noteArea = document.getElementById('noteArea'); const status = document.getElementById('noteStatus');
+        noteArea.value = await Storage.get('quick_note') || '';
         let saveTimeout;
         noteArea.addEventListener('input', () => {
-            status.textContent = '输入中...';
-            status.style.opacity = '1';
+            status.textContent = '输入中...'; status.style.opacity = '1';
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-                Storage.set('quick_note', noteArea.value);
-                status.textContent = '已保存';
-                setTimeout(() => { status.style.opacity = '0.6'; }, 1000);
-            }, 800);
+            saveTimeout = setTimeout(async () => { await Storage.set('quick_note', noteArea.value); status.textContent = '已保存'; setTimeout(() => { status.style.opacity = '0.6'; }, 1000); }, 800);
         });
     },
 
-    // ===== 一言 =====
-    initHitokoto() {
-        this.fetchHitokoto();
-        setInterval(() => this.fetchHitokoto(), 60000);
-    },
-
-    async fetchHitokoto() {
-        const textEl = document.getElementById('hitokotoText');
-        const fromEl = document.getElementById('hitokotoFrom');
-        try {
-            const res = await fetch('https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k');
-            const data = await res.json();
-            textEl.textContent = data.hitokoto;
-            fromEl.textContent = data.from || '';
-            textEl.classList.remove('hitokoto-loading');
-        } catch (e) {
-            textEl.textContent = '世界上最快乐的事，莫过于为理想而奋斗。';
-            fromEl.textContent = '苏格拉底';
-            textEl.classList.remove('hitokoto-loading');
-        }
-    },
-
-    // ===== 随机数 =====
-    initRandom() {
-        this.generateRandom();
-        document.getElementById('randomBtn').addEventListener('click', () => this.generateRandom());
-    },
-
+    // === Tools: Random ===
+    initRandom() { this.generateRandom(); document.getElementById('randomBtn').addEventListener('click', () => this.generateRandom()); },
     generateRandom() {
-        const min = parseInt(document.getElementById('randomMin').value) || 0;
-        const max = parseInt(document.getElementById('randomMax').value) || 100;
-        const lo = Math.min(min, max);
-        const hi = Math.max(min, max);
-        const result = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+        const min = parseInt(document.getElementById('randomMin').value) || 0, max = parseInt(document.getElementById('randomMax').value) || 100;
+        const lo = Math.min(min, max), hi = Math.max(min, max);
         const el = document.getElementById('randomDisplay');
-        el.style.transform = 'scale(1.1)';
-        el.textContent = result;
+        el.style.transform = 'scale(1.1)'; el.textContent = Math.floor(Math.random() * (hi - lo + 1)) + lo;
         setTimeout(() => { el.style.transform = 'scale(1)'; }, 150);
     },
 
-    // ===== 字数统计 =====
-    initCounter() {
-        const input = document.getElementById('counterInput');
-        input.addEventListener('input', () => this.updateCounter());
-    },
-
+    // === Tools: Counter ===
+    initCounter() { document.getElementById('counterInput').addEventListener('input', () => this.updateCounter()); },
     updateCounter() {
-        const text = document.getElementById('counterInput').value;
-        document.getElementById('counterChars').textContent = text.length;
-        document.getElementById('counterWords').textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-        document.getElementById('counterLines').textContent = text === '' ? 0 : text.split('\n').length;
+        const t = document.getElementById('counterInput').value;
+        document.getElementById('counterChars').textContent = t.length;
+        document.getElementById('counterWords').textContent = t.trim() === '' ? 0 : t.trim().split(/\s+/).length;
+        document.getElementById('counterLines').textContent = t === '' ? 0 : t.split('\n').length;
     },
 
-    // ===== Base64 =====
+    // === Tools: Base64 ===
     initBase64() {
         document.getElementById('base64Encode').addEventListener('click', () => {
-            const input = document.getElementById('base64Input').value;
-            try {
-                document.getElementById('base64Output').value = btoa(unescape(encodeURIComponent(input)));
-            } catch (e) {
-                document.getElementById('base64Output').value = '编码失败';
-            }
+            try { document.getElementById('base64Output').value = btoa(unescape(encodeURIComponent(document.getElementById('base64Input').value))); } catch (e) { document.getElementById('base64Output').value = '编码失败'; }
         });
         document.getElementById('base64Decode').addEventListener('click', () => {
-            const input = document.getElementById('base64Input').value;
-            try {
-                document.getElementById('base64Output').value = decodeURIComponent(escape(atob(input)));
-            } catch (e) {
-                document.getElementById('base64Output').value = '解码失败，请检查输入';
-            }
+            try { document.getElementById('base64Output').value = decodeURIComponent(escape(atob(document.getElementById('base64Input').value))); } catch (e) { document.getElementById('base64Output').value = '解码失败'; }
         });
-        document.getElementById('base64Copy').addEventListener('click', () => {
-            const val = document.getElementById('base64Output').value;
-            if (val) navigator.clipboard.writeText(val);
-        });
+        document.getElementById('base64Copy').addEventListener('click', () => { const v = document.getElementById('base64Output').value; if (v) navigator.clipboard.writeText(v); });
     },
 
-    // ===== 密码生成器 =====
+    // === Tools: Password ===
     initPassword() {
-        document.getElementById('passwordLength').addEventListener('input', (e) => {
-            document.getElementById('passwordLengthVal').textContent = e.target.value;
-        });
+        document.getElementById('passwordLength').addEventListener('input', (e) => document.getElementById('passwordLengthVal').textContent = e.target.value);
         document.getElementById('passwordGen').addEventListener('click', () => this.generatePassword());
         document.getElementById('passwordCopy').addEventListener('click', () => {
             const pw = document.getElementById('passwordDisplay').textContent;
-            if (pw && pw !== '点击生成') {
-                navigator.clipboard.writeText(pw).then(() => {
-                    document.getElementById('passwordCopy').innerHTML = '<i class="fas fa-check"></i> 已复制';
-                    setTimeout(() => {
-                        document.getElementById('passwordCopy').innerHTML = '<i class="fas fa-copy"></i> 复制';
-                    }, 1500);
-                });
-            }
+            if (pw && pw !== '点击生成') navigator.clipboard.writeText(pw).then(() => { document.getElementById('passwordCopy').innerHTML = '<i class="fas fa-check"></i> 已复制'; setTimeout(() => { document.getElementById('passwordCopy').innerHTML = '<i class="fas fa-copy"></i> 复制'; }, 1500); });
         });
-        document.getElementById('passwordDisplay').addEventListener('click', () => {
-            const pw = document.getElementById('passwordDisplay').textContent;
-            if (pw && pw !== '点击生成') {
-                navigator.clipboard.writeText(pw);
-            }
-        });
+        document.getElementById('passwordDisplay').addEventListener('click', () => { const pw = document.getElementById('passwordDisplay').textContent; if (pw && pw !== '点击生成') navigator.clipboard.writeText(pw); });
         this.generatePassword();
     },
-
     generatePassword() {
-        const length = parseInt(document.getElementById('passwordLength').value);
+        const len = parseInt(document.getElementById('passwordLength').value);
         let chars = '';
         if (document.getElementById('pwUpper').checked) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         if (document.getElementById('pwLower').checked) chars += 'abcdefghijklmnopqrstuvwxyz';
         if (document.getElementById('pwNumber').checked) chars += '0123456789';
         if (document.getElementById('pwSymbol').checked) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
-        if (!chars) { chars = 'abcdefghijklmnopqrstuvwxyz'; }
-        let pw = '';
-        const arr = new Uint32Array(length);
-        crypto.getRandomValues(arr);
-        for (let i = 0; i < length; i++) pw += chars[arr[i] % chars.length];
+        if (!chars) chars = 'abcdefghijklmnopqrstuvwxyz';
+        let pw = ''; const arr = new Uint32Array(len); crypto.getRandomValues(arr);
+        for (let i = 0; i < len; i++) pw += chars[arr[i] % chars.length];
         document.getElementById('passwordDisplay').textContent = pw;
     },
 
-    // ===== 剪贴板 =====
+    // === Tools: Clipboard ===
     clipboardItems: [],
-
-    initClipboard() {
-        this.clipboardItems = Storage.get('clipboard_items') || [];
-        this.renderClipboard();
-        document.getElementById('clipboardAddBtn').addEventListener('click', () => this.addClipboardItem());
-        document.getElementById('clipboardInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.addClipboardItem();
-        });
-    },
-
-    addClipboardItem() {
-        const input = document.getElementById('clipboardInput');
-        const text = input.value.trim();
-        if (!text) return;
-        this.clipboardItems.unshift({ id: Date.now(), text: text });
-        if (this.clipboardItems.length > 20) this.clipboardItems.pop();
-        Storage.set('clipboard_items', this.clipboardItems);
-        input.value = '';
-        this.renderClipboard();
-    },
-
-    copyClipboardItem(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            const btns = document.querySelectorAll('.clip-copy');
-            btns.forEach(b => {
-                if (b.closest('.clipboard-item')?.querySelector('.clipboard-item-text')?.textContent === text) {
-                    b.innerHTML = '<i class="fas fa-check"></i>';
-                    setTimeout(() => { b.innerHTML = '<i class="fas fa-copy"></i>'; }, 1000);
-                }
-            });
-        });
-    },
-
-    deleteClipboardItem(id) {
-        this.clipboardItems = this.clipboardItems.filter(i => i.id !== id);
-        Storage.set('clipboard_items', this.clipboardItems);
-        this.renderClipboard();
-    },
-
+    async initClipboard() { this.clipboardItems = await Storage.get('clipboard_items') || []; this.renderClipboard(); document.getElementById('clipboardAddBtn').addEventListener('click', () => this.addClipboardItem()); document.getElementById('clipboardInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.addClipboardItem(); }); },
+    async addClipboardItem() { const input = document.getElementById('clipboardInput'); const text = input.value.trim(); if (!text) return; this.clipboardItems.unshift({ id: Date.now(), text }); if (this.clipboardItems.length > 20) this.clipboardItems.pop(); await Storage.set('clipboard_items', this.clipboardItems); input.value = ''; this.renderClipboard(); },
     renderClipboard() {
         const list = document.getElementById('clipboardList');
-        const count = this.clipboardItems.length;
-        document.getElementById('clipboardCount').textContent = count;
-        if (count === 0) {
-            list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:16px;opacity:0.4;">暂无内容</div>';
-            return;
-        }
-        list.innerHTML = this.clipboardItems.map(item => `
-            <div class="clipboard-item" data-id="${item.id}">
-                <span class="clipboard-item-text">${item.text}</span>
-                <div class="clipboard-item-btns">
-                    <button class="clip-copy" title="复制"><i class="fas fa-copy"></i></button>
-                    <button class="clip-delete" title="删除"><i class="fas fa-times"></i></button>
-                </div>
-            </div>
-        `).join('');
-        list.querySelectorAll('.clip-copy').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const text = btn.closest('.clipboard-item').querySelector('.clipboard-item-text').textContent;
-                this.copyClipboardItem(text);
-            });
-        });
-        list.querySelectorAll('.clip-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = parseInt(btn.closest('.clipboard-item').dataset.id);
-                this.deleteClipboardItem(id);
-            });
-        });
+        document.getElementById('clipboardCount').textContent = this.clipboardItems.length;
+        if (this.clipboardItems.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:16px;opacity:0.4;">暂无内容</div>'; return; }
+        list.innerHTML = this.clipboardItems.map(item => `<div class="clipboard-item" data-id="${item.id}"><span class="clipboard-item-text">${item.text}</span><div class="clipboard-item-btns"><button class="clip-copy" title="复制"><i class="fas fa-copy"></i></button><button class="clip-delete" title="删除"><i class="fas fa-times"></i></button></div></div>`).join('');
+        list.querySelectorAll('.clip-copy').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); navigator.clipboard.writeText(btn.closest('.clipboard-item').querySelector('.clipboard-item-text').textContent); }));
+        list.querySelectorAll('.clip-delete').forEach(btn => btn.addEventListener('click', async (e) => { e.stopPropagation(); this.clipboardItems = this.clipboardItems.filter(i => i.id !== parseInt(btn.closest('.clipboard-item').dataset.id)); await Storage.set('clipboard_items', this.clipboardItems); this.renderClipboard(); }));
     },
 
-    // ===== 时间戳转换 =====
+    // === Tools: Timestamp ===
     initTimestamp() {
-        this.updateTsNow();
-        setInterval(() => this.updateTsNow(), 1000);
+        this.updateTsNow(); setInterval(() => this.updateTsNow(), 1000);
         document.getElementById('tsToDate').addEventListener('click', () => this.tsToDate());
-        document.getElementById('tsNowBtn').addEventListener('click', () => {
-            document.getElementById('tsInput').value = Math.floor(Date.now() / 1000);
-            this.tsToDate();
-        });
-        document.getElementById('tsCopyBtn').addEventListener('click', () => {
-            const val = document.getElementById('tsOutput').value || document.getElementById('tsInput').value;
-            if (val) navigator.clipboard.writeText(val);
-        });
-        document.getElementById('tsInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.tsToDate();
-        });
+        document.getElementById('tsNowBtn').addEventListener('click', () => { document.getElementById('tsInput').value = Math.floor(Date.now() / 1000); this.tsToDate(); });
+        document.getElementById('tsCopyBtn').addEventListener('click', () => { const v = document.getElementById('tsOutput').value || document.getElementById('tsInput').value; if (v) navigator.clipboard.writeText(v); });
+        document.getElementById('tsInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.tsToDate(); });
     },
-
-    updateTsNow() {
-        document.getElementById('tsNow').textContent = Math.floor(Date.now() / 1000);
-    },
-
+    updateTsNow() { document.getElementById('tsNow').textContent = Math.floor(Date.now() / 1000); },
     tsToDate() {
-        const input = document.getElementById('tsInput').value.trim();
-        if (!input) return;
-        let ts = parseInt(input);
-        if (ts > 1e12) ts = Math.floor(ts / 1000);
+        const input = document.getElementById('tsInput').value.trim(); if (!input) return;
+        let ts = parseInt(input); if (ts > 1e12) ts = Math.floor(ts / 1000);
         const d = new Date(ts * 1000);
-        if (isNaN(d.getTime())) { document.getElementById('tsOutput').value = '无效时间戳'; return; }
+        if (isNaN(d.getTime())) { document.getElementById('tsOutput').value = '无效'; return; }
         const pad = n => String(n).padStart(2, '0');
-        document.getElementById('tsOutput').value =
-            d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
-            pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+        document.getElementById('tsOutput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    },
+
+    // === Hitokoto ===
+    initHitokoto() { this.fetchHitokoto(); setInterval(() => this.fetchHitokoto(), 60000); },
+    async fetchHitokoto() {
+        const t = document.getElementById('hitokotoText'), f = document.getElementById('hitokotoFrom');
+        try { const r = await fetch('https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k'); const d = await r.json(); t.textContent = d.hitokoto; f.textContent = d.from || ''; t.classList.remove('hitokoto-loading'); }
+        catch (e) { t.textContent = '世界上最快乐的事，莫过于为理想而奋斗。'; f.textContent = '苏格拉底'; t.classList.remove('hitokoto-loading'); }
     }
 };
 

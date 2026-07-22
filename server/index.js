@@ -1,0 +1,159 @@
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const DB_PATH = path.join(__dirname, 'data.json');
+
+app.use(cors());
+app.use(express.json({ limit: '10mb', strict: false }));
+app.use(express.static(path.join(__dirname, '..')));
+
+function loadDB() {
+    try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')); } catch (e) { return null; }
+}
+
+function saveDB(data) {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function initDB() {
+    let db = loadDB();
+    if (!db) {
+        db = {
+            nav_items: [
+                { id: 1, name: 'GitHub', url: 'https://github.com', icon: 'fa-brands fa-github', color: '#333', category: '开发', sort_order: 0 },
+                { id: 2, name: 'Stack Overflow', url: 'https://stackoverflow.com', icon: 'fa-brands fa-stack-overflow', color: '#f48024', category: '开发', sort_order: 1 },
+                { id: 3, name: '掘金', url: 'https://juejin.cn', icon: 'fa-solid fa-gem', color: '#1e80ff', category: '开发', sort_order: 2 },
+                { id: 4, name: 'CSDN', url: 'https://www.csdn.net', icon: 'fa-solid fa-code', color: '#fc5531', category: '开发', sort_order: 3 },
+                { id: 5, name: 'npm', url: 'https://www.npmjs.com', icon: 'fa-brands fa-npm', color: '#cb3837', category: '开发', sort_order: 4 },
+                { id: 6, name: 'V2EX', url: 'https://www.v2ex.com', icon: 'fa-solid fa-comments', color: '#5a9e6f', category: '开发', sort_order: 5 },
+                { id: 7, name: 'Google', url: 'https://www.google.com', icon: 'fa-brands fa-google', color: '#4285f4', category: '常用', sort_order: 6 },
+                { id: 8, name: '百度', url: 'https://www.baidu.com', icon: 'fa-solid fa-paw', color: '#2932e1', category: '常用', sort_order: 7 },
+                { id: 9, name: '知乎', url: 'https://www.zhihu.com', icon: 'fa-solid fa-book', color: '#0066ff', category: '常用', sort_order: 8 },
+                { id: 10, name: 'Twitter', url: 'https://twitter.com', icon: 'fa-brands fa-twitter', color: '#1da1f2', category: '社交', sort_order: 9 },
+                { id: 11, name: '微博', url: 'https://weibo.com', icon: 'fa-brands fa-weibo', color: '#e6162d', category: '社交', sort_order: 10 },
+                { id: 12, name: 'Telegram', url: 'https://t.me', icon: 'fa-brands fa-telegram', color: '#0088cc', category: '社交', sort_order: 11 },
+                { id: 13, name: 'YouTube', url: 'https://www.youtube.com', icon: 'fa-brands fa-youtube', color: '#ff0000', category: '影音', sort_order: 12 },
+                { id: 14, name: 'Bilibili', url: 'https://www.bilibili.com', icon: 'fa-brands fa-bilibili', color: '#fb7299', category: '影音', sort_order: 13 },
+                { id: 15, name: 'Spotify', url: 'https://open.spotify.com', icon: 'fa-brands fa-spotify', color: '#1db954', category: '影音', sort_order: 14 },
+                { id: 16, name: '豆瓣', url: 'https://www.douban.com', icon: 'fa-solid fa-film', color: '#00b51d', category: '影音', sort_order: 15 },
+                { id: 17, name: '淘宝', url: 'https://www.taobao.com', icon: 'fa-solid fa-cart-shopping', color: '#ff5000', category: '购物', sort_order: 16 },
+                { id: 18, name: '京东', url: 'https://www.jd.com', icon: 'fa-solid fa-dog', color: '#e1251b', category: '购物', sort_order: 17 },
+                { id: 19, name: 'Amazon', url: 'https://www.amazon.com', icon: 'fa-brands fa-amazon', color: '#ff9900', category: '购物', sort_order: 18 },
+                { id: 20, name: '什么值得买', url: 'https://www.smzdm.com', icon: 'fa-solid fa-tags', color: '#e4393c', category: '购物', sort_order: 19 }
+            ],
+            engines: [
+                { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=%s', icon: 'fa-brands fa-google', color: '#4285f4', sort_order: 0 },
+                { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=%s', icon: 'fa-solid fa-magnifying-glass', color: '#00809d', sort_order: 1 },
+                { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=%s', icon: 'fa-solid fa-paw', color: '#2932e1', sort_order: 2 },
+                { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s', icon: 'fa-solid fa-duck', color: '#de5833', sort_order: 3 }
+            ],
+            kv: {
+                current_category: '常用',
+                current_engine: 'google',
+                layout_position: 'center',
+                tools_collapsed: true,
+                tools_config: [
+                    { id: 'clock', name: '时钟', icon: 'fa-solid fa-clock', enabled: true },
+                    { id: 'pomodoro', name: '番茄钟', icon: 'fa-solid fa-stopwatch', enabled: true },
+                    { id: 'todo', name: '待办清单', icon: 'fa-solid fa-list-check', enabled: true },
+                    { id: 'notes', name: '快捷笔记', icon: 'fa-solid fa-pen-to-square', enabled: true },
+                    { id: 'random', name: '随机数', icon: 'fa-solid fa-dice', enabled: true },
+                    { id: 'counter', name: '字数统计', icon: 'fa-solid fa-font', enabled: true },
+                    { id: 'base64', name: 'Base64', icon: 'fa-solid fa-code', enabled: true },
+                    { id: 'password', name: '密码生成', icon: 'fa-solid fa-key', enabled: true },
+                    { id: 'clipboard', name: '剪贴板', icon: 'fa-solid fa-clipboard', enabled: true },
+                    { id: 'timestamp', name: '时间戳转换', icon: 'fa-solid fa-clock-rotate-left', enabled: true }
+                ],
+                category_order: ['开发', '常用', '社交', '影音', '购物'],
+                wallpaper: null,
+                wallpaper_history: [],
+                todo_list: [],
+                quick_note: '',
+                clipboard_items: [],
+                dns_map: []
+            }
+        };
+        saveDB(db);
+    }
+    return db;
+}
+
+let db = initDB();
+
+const sseClients = new Set();
+function broadcast(event, data) {
+    const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const res of sseClients) { try { res.write(msg); } catch (e) { sseClients.delete(res); } }
+}
+
+app.get('/api/sse', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+    res.write(':\n\n');
+    sseClients.add(res);
+    req.on('close', () => sseClients.delete(res));
+});
+
+// KV
+app.get('/api/kv/:key', (req, res) => res.json(db.kv[req.params.key] ?? null));
+app.put('/api/kv/:key', (req, res) => { db.kv[req.params.key] = req.body; saveDB(db); broadcast('kv', { key: req.params.key, value: req.body }); res.json({ ok: true }); });
+
+// Nav
+app.get('/api/nav', (req, res) => res.json(db.nav_items.sort((a, b) => a.sort_order - b.sort_order)));
+app.post('/api/nav', (req, res) => {
+    const maxId = db.nav_items.reduce((m, i) => Math.max(m, i.id), 0);
+    const maxOrder = db.nav_items.reduce((m, i) => Math.max(m, i.sort_order), -1);
+    const item = { id: maxId + 1, sort_order: maxOrder + 1, ...req.body };
+    db.nav_items.push(item); saveDB(db); broadcast('nav_change', { action: 'add', item }); res.json(item);
+});
+app.put('/api/nav/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const idx = db.nav_items.findIndex(i => i.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'not found' });
+    db.nav_items[idx] = { ...db.nav_items[idx], ...req.body }; saveDB(db);
+    broadcast('nav_change', { action: 'update', item: db.nav_items[idx] }); res.json(db.nav_items[idx]);
+});
+app.delete('/api/nav/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    db.nav_items = db.nav_items.filter(i => i.id !== id); saveDB(db);
+    broadcast('nav_change', { action: 'delete', id }); res.json({ ok: true });
+});
+app.put('/api/nav-order', (req, res) => {
+    const { items } = req.body;
+    items.forEach((id, i) => { const item = db.nav_items.find(n => n.id === id); if (item) item.sort_order = i; });
+    saveDB(db); broadcast('nav_change', { action: 'reorder' }); res.json({ ok: true });
+});
+
+// Engines
+app.get('/api/engines', (req, res) => res.json(db.engines.sort((a, b) => a.sort_order - b.sort_order)));
+app.post('/api/engines', (req, res) => {
+    const maxOrder = db.engines.reduce((m, e) => Math.max(m, e.sort_order), -1);
+    const engine = { sort_order: maxOrder + 1, ...req.body };
+    if (!engine.id) engine.id = engine.name.toLowerCase().replace(/\s/g, '');
+    db.engines.push(engine); saveDB(db); broadcast('engine_change', { action: 'add', engine }); res.json(engine);
+});
+app.put('/api/engines/:id', (req, res) => {
+    const idx = db.engines.findIndex(e => e.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'not found' });
+    db.engines[idx] = { ...db.engines[idx], ...req.body }; saveDB(db);
+    broadcast('engine_change', { action: 'update', engine: db.engines[idx] }); res.json(db.engines[idx]);
+});
+app.delete('/api/engines/:id', (req, res) => {
+    db.engines = db.engines.filter(e => e.id !== req.params.id); saveDB(db);
+    broadcast('engine_change', { action: 'delete', id: req.params.id }); res.json({ ok: true });
+});
+
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'index.html')));
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n  Navigation Page running at:\n`);
+    console.log(`  → Local:   http://localhost:${PORT}`);
+    const nets = require('os').networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) { if (net.family === 'IPv4' && !net.internal) console.log(`  → Network: http://${net.address}:${PORT}`); }
+    }
+    console.log();
+});
