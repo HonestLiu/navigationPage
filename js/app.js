@@ -203,6 +203,11 @@ const App = {
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.theme-btn');
             if (btn) this.setTheme(btn.dataset.theme);
+
+            const expandBtn = e.target.closest('.tool-expand-btn');
+            if (expandBtn) this.expandTool(expandBtn.dataset.tool);
+
+            if (e.target.id === 'toolOverlay') this.closeOverlay();
         });
 
         document.getElementById('toolsToggle').addEventListener('click', () => this.toggleTools());
@@ -218,6 +223,10 @@ const App = {
 
         document.getElementById('iconUploadArea').addEventListener('click', () => document.getElementById('iconFileInput').click());
         document.getElementById('iconFileInput').addEventListener('change', (e) => this.handleIconUpload(e));
+        document.getElementById('fetchFaviconBtn').addEventListener('click', () => this.fetchFavicon());
+        document.getElementById('editUrl').addEventListener('blur', (e) => {
+            if (e.target.value && !this.selectedIcon.startsWith('data:')) this.fetchFavicon();
+        });
         document.getElementById('editColor').addEventListener('input', (e) => {
             document.getElementById('editColorHex').textContent = e.target.value;
         });
@@ -435,6 +444,214 @@ const App = {
         const collapsed = section.classList.toggle('collapsed');
         arrow.classList.toggle('collapsed', collapsed);
         Storage.set('tools_collapsed', collapsed);
+    },
+
+    // === Tool Expand ===
+    expandTool(toolId) {
+        const overlay = document.getElementById('toolOverlay');
+        const body = document.getElementById('toolOverlayBody');
+        const card = document.getElementById('tool-' + toolId);
+        if (!card) return;
+
+        const toolTitle = card.querySelector('.tool-header span')?.textContent || '';
+
+        const expanded = document.createElement('div');
+        expanded.className = 'tool-card-expanded';
+        const header = document.createElement('div');
+        header.className = 'tool-overlay-header';
+        header.innerHTML = `<span class="tool-overlay-title">${toolTitle}</span><button class="tool-overlay-close" id="toolOverlayCloseInner"><i class="fas fa-times"></i></button>`;
+        expanded.appendChild(header);
+
+        const clone = card.querySelector('.tool-body').cloneNode(true);
+        clone.style.flex = '1';
+        clone.style.overflow = 'auto';
+        expanded.appendChild(clone);
+
+        body.innerHTML = '';
+        body.appendChild(expanded);
+        overlay.classList.add('active');
+
+        header.querySelector('.tool-overlay-close').addEventListener('click', () => this.closeOverlay());
+
+        if (toolId === 'markdown') this.initExpandedMarkdown(clone);
+        if (toolId === 'diff') this.initExpandedDiff(clone);
+        if (toolId === 'json') this.initExpandedJson(clone);
+        if (toolId === 'regex') this.initExpandedRegex(clone);
+        if (toolId === 'notes') this.initExpandedNotes(clone);
+    },
+
+    closeOverlay() {
+        document.getElementById('toolOverlay').classList.remove('active');
+    },
+
+    initExpandedMarkdown(container) {
+        const input = container.querySelector('#mdInput');
+        const preview = container.querySelector('#mdPreview');
+        if (!input || !preview) return;
+        const srcInput = document.getElementById('mdInput');
+        input.value = srcInput.value;
+        input.addEventListener('input', () => {
+            srcInput.value = input.value;
+            srcInput.dispatchEvent(new Event('input'));
+        });
+    },
+
+    initExpandedDiff(container) {
+        const btn = container.querySelector('#diffBtn');
+        if (btn) btn.addEventListener('click', () => {
+            document.getElementById('diffA').value = container.querySelector('#diffA')?.value || '';
+            document.getElementById('diffB').value = container.querySelector('#diffB')?.value || '';
+            document.getElementById('diffBtn').click();
+            const result = container.querySelector('#diffResult');
+            if (result) result.innerHTML = document.getElementById('diffResult').innerHTML;
+        });
+        ['diffA', 'diffB'].forEach(id => {
+            const src = document.getElementById(id);
+            const exp = container.querySelector('#' + id);
+            if (src && exp) {
+                exp.value = src.value;
+                exp.addEventListener('input', () => { src.value = exp.value; });
+            }
+        });
+    },
+
+    initExpandedJson(container) {
+        const src = document.getElementById('jsonInput');
+        const exp = container.querySelector('#jsonInput');
+        if (src && exp) {
+            exp.value = src.value;
+            exp.addEventListener('input', () => { src.value = exp.value; });
+        }
+        container.querySelectorAll('.json-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const expOut = container.querySelector('#jsonOutput');
+                const srcOut = document.getElementById('jsonOutput');
+                if (btn.id === 'jsonFormat' || btn.id === 'jsonMinify') {
+                    document.getElementById(btn.id).click();
+                    if (expOut && srcOut) expOut.value = srcOut.value;
+                    const status = container.querySelector('#jsonStatus');
+                    const srcStatus = document.getElementById('jsonStatus');
+                    if (status && srcStatus) { status.className = srcStatus.className; status.textContent = srcStatus.textContent; }
+                }
+            });
+        });
+    },
+
+    initExpandedRegex(container) {
+        ['regexPattern', 'regexFlags', 'regexInput'].forEach(id => {
+            const src = document.getElementById(id);
+            const exp = container.querySelector('#' + id);
+            if (src && exp) {
+                exp.value = src.value;
+                exp.addEventListener('input', () => { src.value = exp.value; src.dispatchEvent(new Event('input')); });
+            }
+        });
+    },
+
+    initExpandedNotes(container) {
+        this._overlayNotesList = container.querySelector('#notesList');
+        this._overlayNoteEditor = container.querySelector('#noteEditor');
+        this._overlayNoteTitle = container.querySelector('#noteTitle');
+        this._overlayNoteArea = container.querySelector('#noteArea');
+        this._overlayNoteBack = container.querySelector('#noteBackBtn');
+        this._overlayNotePin = container.querySelector('#notePinBtn');
+        this._overlayNoteDelete = container.querySelector('#noteDeleteBtn');
+        this._overlayNoteNew = container.querySelector('#noteNewBtn');
+
+        if (this._overlayNoteBack) this._overlayNoteBack.addEventListener('click', () => this.showOverlayNotesList());
+        if (this._overlayNoteNew) this._overlayNoteNew.addEventListener('click', () => this.createOverlayNote());
+        if (this._overlayNotePin) this._overlayNotePin.addEventListener('click', () => this.toggleOverlayNotePin());
+        if (this._overlayNoteDelete) this._overlayNoteDelete.addEventListener('click', () => this.deleteOverlayNote());
+        if (this._overlayNoteTitle) this._overlayNoteTitle.addEventListener('input', () => this.saveOverlayNote());
+        if (this._overlayNoteArea) this._overlayNoteArea.addEventListener('input', () => this.saveOverlayNote());
+
+        this.renderOverlayNotesList();
+    },
+
+    showOverlayNotesList() {
+        if (this._overlayNotesList) this._overlayNotesList.style.display = '';
+        if (this._overlayNoteEditor) this._overlayNoteEditor.style.display = 'none';
+        this.renderOverlayNotesList();
+    },
+
+    renderOverlayNotesList() {
+        if (!this._overlayNotesList) return;
+        const notes = this._notes || [];
+        const pinned = notes.filter(n => n.pinned);
+        const unpinned = notes.filter(n => !n.pinned);
+        const sorted = [...pinned, ...unpinned];
+
+        if (sorted.length === 0) {
+            this._overlayNotesList.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-3);font-size:12px;">暂无笔记，点击下方新建</div>';
+            return;
+        }
+
+        this._overlayNotesList.innerHTML = sorted.map(n => {
+            const preview = (n.content || '').slice(0, 60).replace(/\n/g, ' ');
+            const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
+            return `<div class="note-item ${this._currentNoteId === n.id ? 'active' : ''}" data-id="${n.id}">
+                ${n.pinned ? '<i class="fas fa-thumbtack note-item-pin"></i>' : ''}
+                <div class="note-item-info">
+                    <div class="note-item-title">${n.title || '无标题'}</div>
+                    <div class="note-item-preview">${preview || '空笔记'}</div>
+                </div>
+                <span class="note-item-time">${time}</span>
+            </div>`;
+        }).join('');
+
+        this._overlayNotesList.querySelectorAll('.note-item').forEach(item => {
+            item.addEventListener('click', () => this.openOverlayNote(item.dataset.id));
+        });
+    },
+
+    createOverlayNote() {
+        const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
+        this._notes.unshift(note);
+        this.saveNotes();
+        this.openOverlayNote(note.id);
+    },
+
+    openOverlayNote(id) {
+        const note = this._notes.find(n => n.id == id);
+        if (!note) return;
+        this._currentNoteId = note.id;
+        if (this._overlayNotesList) this._overlayNotesList.style.display = 'none';
+        if (this._overlayNoteEditor) this._overlayNoteEditor.style.display = 'flex';
+        if (this._overlayNoteTitle) this._overlayNoteTitle.value = note.title;
+        if (this._overlayNoteArea) this._overlayNoteArea.value = note.content;
+        if (this._overlayNotePin) this._overlayNotePin.classList.toggle('pinned', note.pinned);
+    },
+
+    saveOverlayNote() {
+        if (!this._currentNoteId) return;
+        const note = this._notes.find(n => n.id == this._currentNoteId);
+        if (!note) return;
+        note.title = this._overlayNoteTitle?.value || '';
+        note.content = this._overlayNoteArea?.value || '';
+        note.updatedAt = Date.now();
+        this.saveNotes();
+    },
+
+    toggleOverlayNotePin() {
+        if (!this._currentNoteId) return;
+        const note = this._notes.find(n => n.id == this._currentNoteId);
+        if (!note) return;
+        note.pinned = !note.pinned;
+        note.updatedAt = Date.now();
+        if (this._overlayNotePin) this._overlayNotePin.classList.toggle('pinned', note.pinned);
+        this.saveNotes();
+        this.renderOverlayNotesList();
+        this.renderPinnedNotes();
+    },
+
+    deleteOverlayNote() {
+        if (!this._currentNoteId) return;
+        if (!confirm('删除此笔记？')) return;
+        this._notes = this._notes.filter(n => n.id != this._currentNoteId);
+        this._currentNoteId = null;
+        this.saveNotes();
+        this.showOverlayNotesList();
+        this.renderPinnedNotes();
     },
 
     // === Settings Lists ===
@@ -721,6 +938,48 @@ const App = {
         document.querySelector('.icon-option[data-icon="fa-solid fa-link"]').classList.add('selected');
     },
 
+    async fetchFavicon() {
+        const urlInput = document.getElementById('editUrl');
+        const btn = document.getElementById('fetchFaviconBtn');
+        let url = urlInput.value.trim();
+        if (!url) return;
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+        btn.classList.add('loading');
+        document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+
+        try {
+            const res = await fetch('/api/favicon?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(8000) });
+            if (res.ok) {
+                const blob = await res.blob();
+                const dataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+                this._applyFavicon(dataUrl);
+            }
+        } catch (e) {}
+
+        btn.classList.remove('loading');
+    },
+
+    _applyFavicon(iconUrl) {
+        this.selectedIcon = iconUrl;
+        const area = document.getElementById('iconUploadArea');
+        const preview = document.getElementById('iconPreview');
+        area.classList.add('active');
+        preview.innerHTML = `<img src="${iconUrl}">`;
+        let cb = area.querySelector('.icon-upload-clear');
+        if (!cb) {
+            cb = document.createElement('button');
+            cb.className = 'icon-upload-clear';
+            cb.innerHTML = '<i class="fas fa-times"></i>';
+            cb.addEventListener('click', (ev) => { ev.stopPropagation(); this.clearIconUpload(); });
+            area.appendChild(cb);
+        }
+    },
+
     // === Export/Import/Reset ===
     async exportConfig() {
         const data = { navItems: this.navItems, engines: this.engines, exportTime: new Date().toISOString() };
@@ -951,14 +1210,141 @@ const App = {
     },
 
     // === Tools: Notes ===
+    _notes: [],
+    _currentNoteId: null,
+
     async initNotes() {
-        const noteArea = document.getElementById('noteArea'); const status = document.getElementById('noteStatus');
-        noteArea.value = await Storage.get('quick_note') || '';
-        let saveTimeout;
-        noteArea.addEventListener('input', () => {
-            status.textContent = '输入中...'; status.style.opacity = '1';
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(async () => { await Storage.set('quick_note', noteArea.value); status.textContent = '已保存'; setTimeout(() => { status.style.opacity = '0.6'; }, 1000); }, 800);
+        this._notes = (await Storage.get('quick_notes')) || [];
+        if (this._notes.length === 0 && (await Storage.get('quick_note'))) {
+            this._notes = [{ id: 1, title: '我的笔记', content: await Storage.get('quick_note'), pinned: false, createdAt: Date.now(), updatedAt: Date.now() }];
+            await Storage.set('quick_notes', this._notes);
+            await Storage.set('quick_note', null);
+        }
+        this.renderNotesList();
+        document.getElementById('noteNewBtn').addEventListener('click', () => this.createNote());
+        document.getElementById('noteBackBtn').addEventListener('click', () => this.showNotesList());
+        document.getElementById('notePinBtn').addEventListener('click', () => this.toggleNotePin());
+        document.getElementById('noteDeleteBtn').addEventListener('click', () => this.deleteNote());
+        document.getElementById('noteTitle').addEventListener('input', () => this.saveCurrentNote());
+        document.getElementById('noteArea').addEventListener('input', () => this.saveCurrentNote());
+        this.renderPinnedNotes();
+    },
+
+    renderNotesList() {
+        const list = document.getElementById('notesList');
+        const pinned = this._notes.filter(n => n.pinned);
+        const unpinned = this._notes.filter(n => !n.pinned);
+        const sorted = [...pinned, ...unpinned];
+
+        if (sorted.length === 0) {
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:11px;">暂无笔记</div>';
+            return;
+        }
+
+        list.innerHTML = sorted.map(n => {
+            const preview = (n.content || '').slice(0, 50).replace(/\n/g, ' ');
+            return `<div class="note-item ${this._currentNoteId === n.id ? 'active' : ''}" data-id="${n.id}">
+                ${n.pinned ? '<i class="fas fa-thumbtack note-item-pin"></i>' : ''}
+                <div class="note-item-info">
+                    <div class="note-item-title">${n.title || '无标题'}</div>
+                    <div class="note-item-preview">${preview || '空笔记'}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        list.querySelectorAll('.note-item').forEach(item => {
+            item.addEventListener('click', () => this.openNote(item.dataset.id));
+        });
+    },
+
+    showNotesList() {
+        document.getElementById('notesList').style.display = '';
+        document.getElementById('noteEditor').style.display = 'none';
+        this._currentNoteId = null;
+        this.renderNotesList();
+    },
+
+    createNote() {
+        const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
+        this._notes.unshift(note);
+        this.saveNotes();
+        this.openNote(note.id);
+    },
+
+    openNote(id) {
+        const note = this._notes.find(n => n.id == id);
+        if (!note) return;
+        this._currentNoteId = note.id;
+        document.getElementById('notesList').style.display = 'none';
+        document.getElementById('noteEditor').style.display = 'flex';
+        document.getElementById('noteTitle').value = note.title;
+        document.getElementById('noteArea').value = note.content;
+        document.getElementById('notePinBtn').classList.toggle('pinned', note.pinned);
+    },
+
+    saveCurrentNote() {
+        if (!this._currentNoteId) return;
+        const note = this._notes.find(n => n.id == this._currentNoteId);
+        if (!note) return;
+        note.title = document.getElementById('noteTitle').value;
+        note.content = document.getElementById('noteArea').value;
+        note.updatedAt = Date.now();
+        this.saveNotes();
+    },
+
+    toggleNotePin() {
+        if (!this._currentNoteId) return;
+        const note = this._notes.find(n => n.id == this._currentNoteId);
+        if (!note) return;
+        note.pinned = !note.pinned;
+        note.updatedAt = Date.now();
+        document.getElementById('notePinBtn').classList.toggle('pinned', note.pinned);
+        this.saveNotes();
+        this.renderNotesList();
+        this.renderPinnedNotes();
+    },
+
+    deleteNote() {
+        if (!this._currentNoteId) return;
+        if (!confirm('删除此笔记？')) return;
+        this._notes = this._notes.filter(n => n.id != this._currentNoteId);
+        this._currentNoteId = null;
+        this.saveNotes();
+        this.showNotesList();
+        this.renderPinnedNotes();
+    },
+
+    saveNotes() {
+        Storage.set('quick_notes', this._notes);
+    },
+
+    renderPinnedNotes() {
+        const pinned = this._notes.filter(n => n.pinned);
+        let container = document.getElementById('pinnedNotes');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'pinnedNotes';
+            container.className = 'pinned-notes-section';
+            const navGrid = document.getElementById('navGrid');
+            navGrid.parentNode.insertBefore(container, navGrid);
+        }
+        if (pinned.length === 0) { container.style.display = 'none'; return; }
+        container.style.display = '';
+        container.innerHTML = `<div class="pinned-notes-title"><i class="fas fa-thumbtack"></i> 固定笔记</div>` +
+            pinned.map(n => {
+                const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
+                return `<div class="pinned-note-card" data-id="${n.id}">
+                    <div class="pinned-note-title">${n.title || '无标题'}</div>
+                    <div class="pinned-note-content">${preview || '空笔记'}</div>
+                </div>`;
+            }).join('');
+        container.querySelectorAll('.pinned-note-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.getElementById('toolsSection').classList.remove('collapsed');
+                document.getElementById('toolsArrow').classList.remove('collapsed');
+                Storage.set('tools_collapsed', false);
+                setTimeout(() => this.openNote(card.dataset.id), 100);
+            });
         });
     },
 

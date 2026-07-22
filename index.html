@@ -123,10 +123,21 @@
                 <div class="tool-header">
                     <i class="fas fa-pen-to-square"></i>
                     <span>快捷笔记</span>
-                    <span class="note-status" id="noteStatus">已保存</span>
+                    <span class="note-status" id="noteStatus"></span>
+                    <button class="tool-expand-btn" data-tool="notes" title="展开"><i class="fas fa-expand"></i></button>
                 </div>
                 <div class="tool-body note-body">
-                    <textarea id="noteArea" placeholder="在这里记录你的想法..."></textarea>
+                    <div class="notes-list" id="notesList"></div>
+                    <div class="note-editor" id="noteEditor" style="display:none;">
+                        <div class="note-editor-header">
+                            <button class="note-back-btn" id="noteBackBtn"><i class="fas fa-arrow-left"></i></button>
+                            <input type="text" id="noteTitle" placeholder="标题" autocomplete="off">
+                            <button class="note-pin-btn" id="notePinBtn" title="固定到导航页"><i class="fas fa-thumbtack"></i></button>
+                            <button class="note-delete-btn" id="noteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <textarea id="noteArea" placeholder="开始书写..."></textarea>
+                    </div>
+                    <button class="note-new-btn" id="noteNewBtn"><i class="fas fa-plus"></i> 新建笔记</button>
                 </div>
             </div>
 
@@ -278,6 +289,7 @@
                 <div class="tool-header">
                     <i class="fas fa-brackets-curly fa-solid fa-code"></i>
                     <span>JSON 格式化</span>
+                    <button class="tool-expand-btn" data-tool="json" title="展开"><i class="fas fa-expand"></i></button>
                 </div>
                 <div class="tool-body json-body">
                     <textarea id="jsonInput" placeholder='粘贴 JSON 数据...&#10;如: {"name":"test","list":[1,2,3]}'></textarea>
@@ -296,6 +308,7 @@
                 <div class="tool-header">
                     <i class="fab fa-markdown"></i>
                     <span>Markdown 预览</span>
+                    <button class="tool-expand-btn" data-tool="markdown" title="展开"><i class="fas fa-expand"></i></button>
                 </div>
                 <div class="tool-body markdown-body">
                     <div class="markdown-split">
@@ -310,6 +323,7 @@
                 <div class="tool-header">
                     <i class="fas fa-asterisk"></i>
                     <span>正则测试</span>
+                    <button class="tool-expand-btn" data-tool="regex" title="展开"><i class="fas fa-expand"></i></button>
                 </div>
                 <div class="tool-body regex-body">
                     <div class="regex-input-row">
@@ -346,6 +360,7 @@
                 <div class="tool-header">
                     <i class="fas fa-code-compare"></i>
                     <span>文本对比</span>
+                    <button class="tool-expand-btn" data-tool="diff" title="展开"><i class="fas fa-expand"></i></button>
                 </div>
                 <div class="tool-body diff-body">
                     <div class="diff-split">
@@ -583,7 +598,10 @@
                 </div>
                 <div class="form-group">
                     <label for="editUrl">URL</label>
-                    <input type="url" id="editUrl" required>
+                    <div class="url-input-row">
+                        <input type="url" id="editUrl" required>
+                        <button type="button" class="url-fetch-btn" id="fetchFaviconBtn" title="获取网站图标"><i class="fas fa-rotate"></i></button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="editCategory">分类</label>
@@ -798,6 +816,11 @@
             </div>
             <div class="airdrop-list" id="airdropList"></div>
         </div>
+    </div>
+
+    <!-- 工具展开覆盖层 -->
+    <div class="tool-overlay" id="toolOverlay">
+        <div class="tool-overlay-body" id="toolOverlayBody"></div>
     </div>
 
     <script src="js/storage.js?v=3"></script>

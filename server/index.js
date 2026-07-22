@@ -177,6 +177,62 @@ app.get('/api/hitokoto', (req, res) => {
     });
 });
 
+// === Favicon Proxy ===
+app.get('/api/favicon', (req, res) => {
+    let targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).json({ error: 'missing url' });
+    if (!/^https?:\/\//i.test(targetUrl)) targetUrl = 'https://' + targetUrl;
+
+    let hostname;
+    try { hostname = new URL(targetUrl).hostname; } catch (e) { return res.status(400).json({ error: 'invalid url' }); }
+
+    const sources = [];
+    const dnsMap = db.kv.dns_map || [];
+    let resolvedHost = hostname;
+    for (const entry of dnsMap) {
+        if (hostname === entry.domain) { resolvedHost = entry.ip; break; }
+    }
+    const port = new URL(targetUrl).port;
+    const baseUrl = port ? `http://${resolvedHost}:${port}` : `https://${resolvedHost}`;
+    sources.push(`${baseUrl}/favicon.ico`);
+    if (resolvedHost !== hostname) sources.push(`https://${hostname}/favicon.ico`);
+
+    let idx = 0;
+    let responded = false;
+
+    function tryNext() {
+        if (responded) return;
+        if (idx >= sources.length) { responded = true; return res.status(404).json({ error: 'not found' }); }
+        const src = sources[idx++];
+        const client = src.startsWith('https') ? https : require('http');
+        const reqOpts = { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+
+        const proxyReq = client.get(src, reqOpts, (r) => {
+            if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+                r.resume();
+                const redir = r.headers.location.startsWith('http') ? r.headers.location : new URL(r.headers.location, src).href;
+                client.get(redir, reqOpts, (r2) => handleResponse(r2)).on('error', () => tryNext()).on('timeout', function () { this.destroy(); tryNext(); });
+                return;
+            }
+            handleResponse(r);
+        });
+        proxyReq.on('error', () => tryNext());
+        proxyReq.on('timeout', function () { this.destroy(); tryNext(); });
+
+        function handleResponse(r) {
+            if (responded) { r.resume(); return; }
+            if (r.statusCode !== 200) { r.resume(); return tryNext(); }
+            const ct = r.headers['content-type'] || '';
+            if (!ct.includes('image') && !ct.includes('icon') && !ct.includes('octet')) { r.resume(); return tryNext(); }
+            responded = true;
+            res.setHeader('Content-Type', ct);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            r.pipe(res);
+        }
+    }
+    tryNext();
+});
+
 // === Wallpaper Upload ===
 app.post('/api/wallpaper/upload', express.raw({ limit: '10mb', type: '*/*' }), (req, res) => {
     const ext = req.headers['x-wallpaper-ext'] || '.jpg';
