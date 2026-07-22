@@ -18,6 +18,12 @@ const App = {
         this.initPomodoro();
         this.initTodo();
         this.initNotes();
+        this.initRandom();
+        this.initCounter();
+        this.initBase64();
+        this.initPassword();
+        this.initClipboard();
+        this.initTimestamp();
         this.applyToolsVisibility();
         this.applyToolsOrder();
         this.initHitokoto();
@@ -57,6 +63,18 @@ const App = {
         });
         document.addEventListener('click', (e) => {
             document.getElementById('engineDropdown').classList.remove('active');
+            const settingsPanel = document.getElementById('settingsPanel');
+            if (settingsPanel.classList.contains('active') &&
+                !settingsPanel.contains(e.target) &&
+                !e.target.closest('#settingsFab')) {
+                settingsPanel.classList.remove('active');
+            }
+            const wallpaperPanel = document.getElementById('wallpaperPanel');
+            if (wallpaperPanel.classList.contains('active') &&
+                !wallpaperPanel.contains(e.target) &&
+                !e.target.closest('#wallpaperFab')) {
+                wallpaperPanel.classList.remove('active');
+            }
             if (!e.target.closest('.search-section')) {
                 this.closeSuggestions();
             }
@@ -106,6 +124,15 @@ const App = {
                 this.updatePositionButtons();
             });
         });
+
+        // 工具区域折叠
+        document.getElementById('toolsToggle').addEventListener('click', () => this.toggleTools());
+        // 默认折叠
+        if (!Storage.get('tools_collapsed_explicit')) {
+            document.getElementById('toolsSection').classList.add('collapsed');
+            document.getElementById('toolsArrow').classList.add('collapsed');
+            Storage.set('tools_collapsed', true);
+        }
 
         document.getElementById('iconPicker').addEventListener('click', (e) => {
             const option = e.target.closest('.icon-option');
@@ -586,6 +613,15 @@ const App = {
             const el = document.getElementById('tool-' + tool.id);
             if (el) el.style.display = tool.enabled ? '' : 'none';
         });
+    },
+
+    toggleTools() {
+        const section = document.getElementById('toolsSection');
+        const arrow = document.getElementById('toolsArrow');
+        const collapsed = section.classList.toggle('collapsed');
+        arrow.classList.toggle('collapsed', collapsed);
+        Storage.set('tools_collapsed', collapsed);
+        Storage.set('tools_collapsed_explicit', true);
     },
 
     applyToolsOrder() {
@@ -1261,6 +1297,211 @@ const App = {
             fromEl.textContent = '苏格拉底';
             textEl.classList.remove('hitokoto-loading');
         }
+    },
+
+    // ===== 随机数 =====
+    initRandom() {
+        this.generateRandom();
+        document.getElementById('randomBtn').addEventListener('click', () => this.generateRandom());
+    },
+
+    generateRandom() {
+        const min = parseInt(document.getElementById('randomMin').value) || 0;
+        const max = parseInt(document.getElementById('randomMax').value) || 100;
+        const lo = Math.min(min, max);
+        const hi = Math.max(min, max);
+        const result = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+        const el = document.getElementById('randomDisplay');
+        el.style.transform = 'scale(1.1)';
+        el.textContent = result;
+        setTimeout(() => { el.style.transform = 'scale(1)'; }, 150);
+    },
+
+    // ===== 字数统计 =====
+    initCounter() {
+        const input = document.getElementById('counterInput');
+        input.addEventListener('input', () => this.updateCounter());
+    },
+
+    updateCounter() {
+        const text = document.getElementById('counterInput').value;
+        document.getElementById('counterChars').textContent = text.length;
+        document.getElementById('counterWords').textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+        document.getElementById('counterLines').textContent = text === '' ? 0 : text.split('\n').length;
+    },
+
+    // ===== Base64 =====
+    initBase64() {
+        document.getElementById('base64Encode').addEventListener('click', () => {
+            const input = document.getElementById('base64Input').value;
+            try {
+                document.getElementById('base64Output').value = btoa(unescape(encodeURIComponent(input)));
+            } catch (e) {
+                document.getElementById('base64Output').value = '编码失败';
+            }
+        });
+        document.getElementById('base64Decode').addEventListener('click', () => {
+            const input = document.getElementById('base64Input').value;
+            try {
+                document.getElementById('base64Output').value = decodeURIComponent(escape(atob(input)));
+            } catch (e) {
+                document.getElementById('base64Output').value = '解码失败，请检查输入';
+            }
+        });
+        document.getElementById('base64Copy').addEventListener('click', () => {
+            const val = document.getElementById('base64Output').value;
+            if (val) navigator.clipboard.writeText(val);
+        });
+    },
+
+    // ===== 密码生成器 =====
+    initPassword() {
+        document.getElementById('passwordLength').addEventListener('input', (e) => {
+            document.getElementById('passwordLengthVal').textContent = e.target.value;
+        });
+        document.getElementById('passwordGen').addEventListener('click', () => this.generatePassword());
+        document.getElementById('passwordCopy').addEventListener('click', () => {
+            const pw = document.getElementById('passwordDisplay').textContent;
+            if (pw && pw !== '点击生成') {
+                navigator.clipboard.writeText(pw).then(() => {
+                    document.getElementById('passwordCopy').innerHTML = '<i class="fas fa-check"></i> 已复制';
+                    setTimeout(() => {
+                        document.getElementById('passwordCopy').innerHTML = '<i class="fas fa-copy"></i> 复制';
+                    }, 1500);
+                });
+            }
+        });
+        document.getElementById('passwordDisplay').addEventListener('click', () => {
+            const pw = document.getElementById('passwordDisplay').textContent;
+            if (pw && pw !== '点击生成') {
+                navigator.clipboard.writeText(pw);
+            }
+        });
+        this.generatePassword();
+    },
+
+    generatePassword() {
+        const length = parseInt(document.getElementById('passwordLength').value);
+        let chars = '';
+        if (document.getElementById('pwUpper').checked) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        if (document.getElementById('pwLower').checked) chars += 'abcdefghijklmnopqrstuvwxyz';
+        if (document.getElementById('pwNumber').checked) chars += '0123456789';
+        if (document.getElementById('pwSymbol').checked) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        if (!chars) { chars = 'abcdefghijklmnopqrstuvwxyz'; }
+        let pw = '';
+        const arr = new Uint32Array(length);
+        crypto.getRandomValues(arr);
+        for (let i = 0; i < length; i++) pw += chars[arr[i] % chars.length];
+        document.getElementById('passwordDisplay').textContent = pw;
+    },
+
+    // ===== 剪贴板 =====
+    clipboardItems: [],
+
+    initClipboard() {
+        this.clipboardItems = Storage.get('clipboard_items') || [];
+        this.renderClipboard();
+        document.getElementById('clipboardAddBtn').addEventListener('click', () => this.addClipboardItem());
+        document.getElementById('clipboardInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addClipboardItem();
+        });
+    },
+
+    addClipboardItem() {
+        const input = document.getElementById('clipboardInput');
+        const text = input.value.trim();
+        if (!text) return;
+        this.clipboardItems.unshift({ id: Date.now(), text: text });
+        if (this.clipboardItems.length > 20) this.clipboardItems.pop();
+        Storage.set('clipboard_items', this.clipboardItems);
+        input.value = '';
+        this.renderClipboard();
+    },
+
+    copyClipboardItem(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const btns = document.querySelectorAll('.clip-copy');
+            btns.forEach(b => {
+                if (b.closest('.clipboard-item')?.querySelector('.clipboard-item-text')?.textContent === text) {
+                    b.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => { b.innerHTML = '<i class="fas fa-copy"></i>'; }, 1000);
+                }
+            });
+        });
+    },
+
+    deleteClipboardItem(id) {
+        this.clipboardItems = this.clipboardItems.filter(i => i.id !== id);
+        Storage.set('clipboard_items', this.clipboardItems);
+        this.renderClipboard();
+    },
+
+    renderClipboard() {
+        const list = document.getElementById('clipboardList');
+        const count = this.clipboardItems.length;
+        document.getElementById('clipboardCount').textContent = count;
+        if (count === 0) {
+            list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:16px;opacity:0.4;">暂无内容</div>';
+            return;
+        }
+        list.innerHTML = this.clipboardItems.map(item => `
+            <div class="clipboard-item" data-id="${item.id}">
+                <span class="clipboard-item-text">${item.text}</span>
+                <div class="clipboard-item-btns">
+                    <button class="clip-copy" title="复制"><i class="fas fa-copy"></i></button>
+                    <button class="clip-delete" title="删除"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+        `).join('');
+        list.querySelectorAll('.clip-copy').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const text = btn.closest('.clipboard-item').querySelector('.clipboard-item-text').textContent;
+                this.copyClipboardItem(text);
+            });
+        });
+        list.querySelectorAll('.clip-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.closest('.clipboard-item').dataset.id);
+                this.deleteClipboardItem(id);
+            });
+        });
+    },
+
+    // ===== 时间戳转换 =====
+    initTimestamp() {
+        this.updateTsNow();
+        setInterval(() => this.updateTsNow(), 1000);
+        document.getElementById('tsToDate').addEventListener('click', () => this.tsToDate());
+        document.getElementById('tsNowBtn').addEventListener('click', () => {
+            document.getElementById('tsInput').value = Math.floor(Date.now() / 1000);
+            this.tsToDate();
+        });
+        document.getElementById('tsCopyBtn').addEventListener('click', () => {
+            const val = document.getElementById('tsOutput').value || document.getElementById('tsInput').value;
+            if (val) navigator.clipboard.writeText(val);
+        });
+        document.getElementById('tsInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.tsToDate();
+        });
+    },
+
+    updateTsNow() {
+        document.getElementById('tsNow').textContent = Math.floor(Date.now() / 1000);
+    },
+
+    tsToDate() {
+        const input = document.getElementById('tsInput').value.trim();
+        if (!input) return;
+        let ts = parseInt(input);
+        if (ts > 1e12) ts = Math.floor(ts / 1000);
+        const d = new Date(ts * 1000);
+        if (isNaN(d.getTime())) { document.getElementById('tsOutput').value = '无效时间戳'; return; }
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('tsOutput').value =
+            d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
+            pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
     }
 };
 

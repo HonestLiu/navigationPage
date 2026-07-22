@@ -130,7 +130,13 @@ const Storage = {
             { id: 'clock', name: '时钟', icon: 'fa-solid fa-clock', enabled: true },
             { id: 'pomodoro', name: '番茄钟', icon: 'fa-solid fa-stopwatch', enabled: true },
             { id: 'todo', name: '待办清单', icon: 'fa-solid fa-list-check', enabled: true },
-            { id: 'notes', name: '快捷笔记', icon: 'fa-solid fa-pen-to-square', enabled: true }
+            { id: 'notes', name: '快捷笔记', icon: 'fa-solid fa-pen-to-square', enabled: true },
+            { id: 'random', name: '随机数', icon: 'fa-solid fa-dice', enabled: true },
+            { id: 'counter', name: '字数统计', icon: 'fa-solid fa-font', enabled: true },
+            { id: 'base64', name: 'Base64', icon: 'fa-solid fa-code', enabled: true },
+            { id: 'password', name: '密码生成', icon: 'fa-solid fa-key', enabled: true },
+            { id: 'clipboard', name: '剪贴板', icon: 'fa-solid fa-clipboard', enabled: true },
+            { id: 'timestamp', name: '时间戳转换', icon: 'fa-solid fa-clock-rotate-left', enabled: true }
         ];
     },
 

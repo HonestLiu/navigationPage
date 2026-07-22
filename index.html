@@ -45,7 +45,13 @@
         </div>
 
         <!-- 小工具区域 -->
-        <div class="tools-section" id="toolsSection">
+        <div class="tools-wrapper">
+            <button class="tools-toggle" id="toolsToggle">
+                <i class="fas fa-puzzle-piece"></i>
+                <span>小工具</span>
+                <i class="fas fa-chevron-down tools-toggle-arrow" id="toolsArrow"></i>
+            </button>
+            <div class="tools-section" id="toolsSection">
             <!-- 时钟 -->
             <div class="tool-card" id="tool-clock">
                 <div class="tool-header">
@@ -117,6 +123,154 @@
                     <textarea id="noteArea" placeholder="在这里记录你的想法..."></textarea>
                 </div>
             </div>
+
+            <!-- 随机数生成器 -->
+            <div class="tool-card" id="tool-random">
+                <div class="tool-header">
+                    <i class="fas fa-dice"></i>
+                    <span>随机数</span>
+                </div>
+                <div class="tool-body random-body">
+                    <div class="random-display" id="randomDisplay">0</div>
+                    <div class="random-range">
+                        <input type="number" id="randomMin" value="1" min="0">
+                        <span>~</span>
+                        <input type="number" id="randomMax" value="100">
+                    </div>
+                    <button class="random-btn" id="randomBtn">
+                        <i class="fas fa-shuffle"></i> 生成
+                    </button>
+                </div>
+            </div>
+
+            <!-- 字数统计 -->
+            <div class="tool-card" id="tool-counter">
+                <div class="tool-header">
+                    <i class="fas fa-font"></i>
+                    <span>字数统计</span>
+                </div>
+                <div class="tool-body counter-body">
+                    <textarea id="counterInput" placeholder="粘贴或输入文本..."></textarea>
+                    <div class="counter-stats">
+                        <div class="counter-stat">
+                            <span class="counter-num" id="counterChars">0</span>
+                            <span class="counter-label">字符</span>
+                        </div>
+                        <div class="counter-stat">
+                            <span class="counter-num" id="counterWords">0</span>
+                            <span class="counter-label">单词</span>
+                        </div>
+                        <div class="counter-stat">
+                            <span class="counter-num" id="counterLines">0</span>
+                            <span class="counter-label">行</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Base64 编解码 -->
+            <div class="tool-card" id="tool-base64">
+                <div class="tool-header">
+                    <i class="fas fa-code"></i>
+                    <span>Base64</span>
+                </div>
+                <div class="tool-body base64-body">
+                    <textarea id="base64Input" placeholder="输入文本..."></textarea>
+                    <div class="base64-btns">
+                        <button class="base64-btn" id="base64Encode">
+                            <i class="fas fa-lock"></i> 编码
+                        </button>
+                        <button class="base64-btn" id="base64Decode">
+                            <i class="fas fa-unlock"></i> 解码
+                        </button>
+                        <button class="base64-btn" id="base64Copy">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <textarea id="base64Output" placeholder="结果..." readonly></textarea>
+                </div>
+            </div>
+
+            <!-- 密码生成器 -->
+            <div class="tool-card" id="tool-password">
+                <div class="tool-header">
+                    <i class="fas fa-key"></i>
+                    <span>密码生成</span>
+                </div>
+                <div class="tool-body password-body">
+                    <div class="password-display" id="passwordDisplay">点击生成</div>
+                    <div class="password-options">
+                        <div class="password-opt">
+                            <label>长度</label>
+                            <input type="range" id="passwordLength" min="6" max="64" value="16">
+                            <span id="passwordLengthVal">16</span>
+                        </div>
+                        <div class="password-toggles">
+                            <label class="pw-toggle"><input type="checkbox" id="pwUpper" checked> 大写</label>
+                            <label class="pw-toggle"><input type="checkbox" id="pwLower" checked> 小写</label>
+                            <label class="pw-toggle"><input type="checkbox" id="pwNumber" checked> 数字</label>
+                            <label class="pw-toggle"><input type="checkbox" id="pwSymbol" checked> 符号</label>
+                        </div>
+                    </div>
+                    <div class="password-actions">
+                        <button class="password-btn" id="passwordGen">
+                            <i class="fas fa-rotate"></i> 生成
+                        </button>
+                        <button class="password-btn" id="passwordCopy">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 剪贴板 -->
+            <div class="tool-card tool-card-wide" id="tool-clipboard">
+                <div class="tool-header">
+                    <i class="fas fa-clipboard"></i>
+                    <span>剪贴板</span>
+                    <span class="clipboard-count" id="clipboardCount">0</span>
+                </div>
+                <div class="tool-body clipboard-body">
+                    <div class="clipboard-input-row">
+                        <input type="text" id="clipboardInput" placeholder="输入要保存的文本..." autocomplete="off">
+                        <button class="clipboard-add-btn" id="clipboardAddBtn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="clipboard-list" id="clipboardList"></div>
+                </div>
+            </div>
+
+            <!-- 时间戳转换 -->
+            <div class="tool-card tool-card-wide" id="tool-timestamp">
+                <div class="tool-header">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <span>时间戳转换</span>
+                    <span class="ts-now" id="tsNow"></span>
+                </div>
+                <div class="tool-body timestamp-body">
+                    <div class="ts-row">
+                        <div class="ts-input-group">
+                            <label>时间戳</label>
+                            <input type="text" id="tsInput" placeholder="如: 1700000000">
+                        </div>
+                        <button class="ts-btn" id="tsToDate"><i class="fas fa-arrow-right"></i></button>
+                        <div class="ts-input-group">
+                            <label>日期时间</label>
+                            <input type="text" id="tsOutput" placeholder="如: 2024-01-01 00:00:00">
+                        </div>
+                    </div>
+                    <div class="ts-actions">
+                        <button class="ts-action-btn" id="tsNowBtn">
+                            <i class="fas fa-crosshairs"></i> 获取当前时间戳
+                        </button>
+                        <button class="ts-action-btn" id="tsCopyBtn">
+                            <i class="fas fa-copy"></i> 复制结果
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
 
         <!-- 壁纸按钮 -->
