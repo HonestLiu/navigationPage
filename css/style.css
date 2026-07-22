@@ -111,6 +111,85 @@ body.wallpaper-active::before {
     font-size: 18px;
 }
 
+.settings-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    line-height: 1.5;
+    opacity: 0.7;
+}
+
+.dns-map-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.dns-map-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.dns-map-row:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dns-map-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.dns-map-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.dns-map-domain {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.dns-map-arrow {
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin: 0 4px;
+    opacity: 0.5;
+}
+
+.dns-map-ip {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: monospace;
+}
+
+.dns-map-note {
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    margin-top: 2px;
+}
+
+.dns-map-row .item-actions {
+    display: flex;
+    gap: 6px;
+}
+
 .tools-config-list {
     display: flex;
     flex-direction: column;
@@ -212,10 +291,15 @@ body.wallpaper-active::before {
 /* 搜索区域 */
 .search-section {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     margin-bottom: 48px;
     position: relative;
     z-index: 10;
+    width: 100%;
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .search-box {
@@ -356,6 +440,89 @@ body.wallpaper-active::before {
     background: rgba(255, 255, 255, 1);
     transform: scale(1.02);
     box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
+}
+
+.search-suggestions {
+    width: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: rgba(30, 30, 50, 0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    margin-top: 8px;
+    display: none;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.search-suggestions.active {
+    display: block;
+    animation: suggestionsIn 0.2s ease;
+}
+
+@keyframes suggestionsIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: var(--text-primary);
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.suggestion-item i {
+    color: var(--text-secondary);
+    font-size: 13px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.suggestion-item .suggestion-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.suggestion-item .suggestion-text em {
+    font-style: normal;
+    font-weight: 600;
+    color: #a5b4fc;
+}
+
+.suggestion-item .suggestion-arrow {
+    color: var(--text-secondary);
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.suggestion-item:hover .suggestion-arrow,
+.suggestion-item.active .suggestion-arrow {
+    opacity: 1;
 }
 
 /* 导航区域 */
@@ -894,6 +1061,47 @@ body.wallpaper-active::before {
     color: var(--text-secondary);
 }
 
+/* 一言 */
+.hitokoto-section {
+    text-align: center;
+    padding: 28px 20px 8px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.hitokoto-section:hover {
+    opacity: 1;
+}
+
+.hitokoto-text {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    letter-spacing: 0.3px;
+}
+
+.hitokoto-from {
+    display: inline;
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    margin-left: 8px;
+}
+
+.hitokoto-from::before {
+    content: '—— ';
+}
+
+.hitokoto-loading {
+    animation: hitokotoFade 1.5s ease-in-out infinite;
+}
+
+@keyframes hitokotoFade {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+}
+
 @media (max-width: 768px) {
     .tools-section {
         grid-template-columns: 1fr;
@@ -1183,6 +1391,74 @@ body.wallpaper-active::before {
     background: rgba(99, 102, 241, 0.2);
     border-color: rgba(99, 102, 241, 0.6);
     color: #a5b4fc;
+}
+
+.icon-upload-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-upload-area:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.icon-upload-area.active {
+    border-color: rgba(99, 102, 241, 0.5);
+    border-style: solid;
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.icon-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 16px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.icon-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.icon-upload-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.icon-upload-clear {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.icon-upload-clear:hover {
+    background: rgba(239, 68, 68, 0.4);
 }
 
 .item-actions button {

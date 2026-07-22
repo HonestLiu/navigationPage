@@ -24,6 +24,7 @@
                     <i class="fas fa-search"></i>
                 </button>
             </div>
+            <div class="search-suggestions" id="searchSuggestions"></div>
         </div>
 
         <!-- 导航区域 -->
@@ -127,6 +128,12 @@
         <button class="settings-fab" id="settingsFab" title="设置">
             <i class="fas fa-cog"></i>
         </button>
+
+        <!-- 一言 -->
+        <div class="hitokoto-section" id="hitokotoSection">
+            <span class="hitokoto-text" id="hitokotoText">加载中...</span>
+            <span class="hitokoto-from" id="hitokotoFrom"></span>
+        </div>
     </div>
 
     <!-- 设置面板 -->
@@ -205,6 +212,16 @@
                 <h4>小工具</h4>
                 <div class="tools-config-list" id="toolsConfigList"></div>
             </div>
+
+            <!-- DNS映射 -->
+            <div class="settings-section">
+                <h4>DNS 映射</h4>
+                <p class="settings-desc">将自定义域名映射到实际 IP，方便管理局域网设备</p>
+                <div class="dns-map-list" id="dnsMapList"></div>
+                <button class="add-btn" id="addDnsMap">
+                    <i class="fas fa-plus"></i> 添加映射
+                </button>
+            </div>
         </div>
     </div>
 
@@ -225,6 +242,37 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="cancel-btn" id="cancelCategoryEdit">取消</button>
+                    <button type="submit" class="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DNS映射编辑弹窗 -->
+    <div class="modal" id="dnsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="dnsModalTitle">添加 DNS 映射</h3>
+                <button class="close-btn" id="closeDnsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="dnsForm">
+                <input type="hidden" id="dnsEditIndex">
+                <div class="form-group">
+                    <label for="dnsEditDomain">自定义域名</label>
+                    <input type="text" id="dnsEditDomain" required placeholder="如: nas.local">
+                </div>
+                <div class="form-group">
+                    <label for="dnsEditIp">映射 IP 地址</label>
+                    <input type="text" id="dnsEditIp" required placeholder="如: 192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label for="dnsEditNote">备注（可选）</label>
+                    <input type="text" id="dnsEditNote" placeholder="如: 家庭 NAS">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn" id="cancelDnsEdit">取消</button>
                     <button type="submit" class="save-btn">保存</button>
                 </div>
             </form>
@@ -320,6 +368,13 @@
                         <div class="icon-option" data-icon="fa-solid fa-gamepad">
                             <i class="fa-solid fa-gamepad"></i>
                         </div>
+                    </div>
+                    <div class="icon-upload-area" id="iconUploadArea">
+                        <input type="file" id="iconFileInput" accept="image/*" style="display:none">
+                        <div class="icon-preview" id="iconPreview">
+                            <i class="fas fa-cloud-arrow-up"></i>
+                        </div>
+                        <span class="icon-upload-text">上传自定义图标</span>
                     </div>
                 </div>
                 <div class="form-group">

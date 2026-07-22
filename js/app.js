@@ -20,11 +20,34 @@ const App = {
         this.initNotes();
         this.applyToolsVisibility();
         this.applyToolsOrder();
+        this.initHitokoto();
     },
 
     bindEvents() {
+        // 搜索
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.search();
+            if (e.key === 'Enter') {
+                const active = document.querySelector('.suggestion-item.active');
+                if (active) {
+                    this.searchWithQuery(active.dataset.query);
+                } else {
+                    this.search();
+                }
+            }
+        });
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            this.fetchSuggestions(e.target.value);
+        });
+        document.getElementById('searchInput').addEventListener('keyup', (e) => {
+            if (['ArrowDown', 'ArrowUp', 'Escape', 'Enter'].includes(e.key)) return;
+            this.fetchSuggestions(e.target.value);
+        });
+        document.getElementById('searchInput').addEventListener('keydown', (e) => {
+            this.handleSuggestionKeydown(e);
+        });
+        document.getElementById('searchInput').addEventListener('focus', () => {
+            const val = document.getElementById('searchInput').value.trim();
+            if (val) this.fetchSuggestions(val);
         });
         document.getElementById('searchBtn').addEventListener('click', () => this.search());
 
@@ -32,8 +55,11 @@ const App = {
             e.stopPropagation();
             document.getElementById('engineDropdown').classList.toggle('active');
         });
-        document.addEventListener('click', () => {
+        document.addEventListener('click', (e) => {
             document.getElementById('engineDropdown').classList.remove('active');
+            if (!e.target.closest('.search-section')) {
+                this.closeSuggestions();
+            }
         });
 
         document.getElementById('settingsFab').addEventListener('click', () => this.toggleSettings());
@@ -42,11 +68,13 @@ const App = {
         document.getElementById('addSiteBtn').addEventListener('click', () => this.openNavModal());
         document.getElementById('addNavItem').addEventListener('click', () => this.openNavModal());
         document.getElementById('addCategory').addEventListener('click', () => this.openCategoryModal());
+        document.getElementById('addDnsMap').addEventListener('click', () => this.openDnsModal());
         document.getElementById('addEngine').addEventListener('click', () => this.openEngineModal());
 
         document.getElementById('editForm').addEventListener('submit', (e) => this.saveNavItem(e));
         document.getElementById('engineForm').addEventListener('submit', (e) => this.saveEngine(e));
         document.getElementById('categoryForm').addEventListener('submit', (e) => this.saveCategory(e));
+        document.getElementById('dnsForm').addEventListener('submit', (e) => this.saveDnsMap(e));
 
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal('editModal'));
         document.getElementById('cancelEdit').addEventListener('click', () => this.closeModal('editModal'));
@@ -54,6 +82,8 @@ const App = {
         document.getElementById('cancelEngineEdit').addEventListener('click', () => this.closeModal('engineModal'));
         document.getElementById('closeCategoryModal').addEventListener('click', () => this.closeModal('categoryModal'));
         document.getElementById('cancelCategoryEdit').addEventListener('click', () => this.closeModal('categoryModal'));
+        document.getElementById('closeDnsModal').addEventListener('click', () => this.closeModal('dnsModal'));
+        document.getElementById('cancelDnsEdit').addEventListener('click', () => this.closeModal('dnsModal'));
 
         document.getElementById('exportBtn').addEventListener('click', () => this.exportConfig());
         document.getElementById('importBtn').addEventListener('click', () => document.getElementById('fileInput').click());
@@ -94,6 +124,12 @@ const App = {
             document.getElementById('editColorHex').textContent = e.target.value;
         });
 
+        // 图标上传
+        document.getElementById('iconUploadArea').addEventListener('click', () => {
+            document.getElementById('iconFileInput').click();
+        });
+        document.getElementById('iconFileInput').addEventListener('change', (e) => this.handleIconUpload(e));
+
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) this.closeModal(modal.id);
@@ -104,10 +140,152 @@ const App = {
     search() {
         const input = document.getElementById('searchInput').value.trim();
         if (!input) return;
+        this.searchWithQuery(input);
+    },
+
+    searchWithQuery(query) {
         const engine = Storage.getEngines().find(e => e.id === Storage.getCurrentEngine());
         if (engine) {
-            window.open(engine.url.replace('%s', encodeURIComponent(input)), '_blank');
+            window.open(engine.url.replace('%s', encodeURIComponent(query)), '_blank');
         }
+        this.closeSuggestions();
+        document.getElementById('searchInput').value = query;
+    },
+
+    suggestionIndex: -1,
+    suggestionTimer: null,
+
+    async fetchSuggestions(query) {
+        clearTimeout(this.suggestionTimer);
+        const box = document.getElementById('searchSuggestions');
+        if (!query || query.trim().length < 1) {
+            this.closeSuggestions();
+            return;
+        }
+        this.suggestionTimer = setTimeout(async () => {
+            try {
+                const engineId = Storage.getCurrentEngine();
+                let suggestions = [];
+                if (engineId === 'google') {
+                    suggestions = await this.getGoogleSuggestions(query);
+                } else if (engineId === 'bing') {
+                    suggestions = await this.getBingSuggestions(query);
+                } else if (engineId === 'baidu') {
+                    suggestions = await this.getBaiduSuggestions(query);
+                } else if (engineId === 'duckduckgo') {
+                    suggestions = await this.getDuckDuckGoSuggestions(query);
+                }
+                if (suggestions.length > 0) {
+                    this.renderSuggestions(suggestions, query);
+                } else {
+                    this.closeSuggestions();
+                }
+            } catch (e) {
+                console.warn('Suggestion fetch failed:', e);
+                this.closeSuggestions();
+            }
+        }, 250);
+    },
+
+    async getGoogleSuggestions(query) {
+        try {
+            const res = await fetch('https://suggestqueries.google.com/complete/search?client=firefox&q=' + encodeURIComponent(query));
+            const data = await res.json();
+            return (data[1] || []).slice(0, 8);
+        } catch (e) { return []; }
+    },
+
+    async getBingSuggestions(query) {
+        try {
+            const res = await fetch('https://api.bing.com/qsonhs.aspx?q=' + encodeURIComponent(query));
+            const data = await res.json();
+            return (data.AS?.Results?.[0]?.Suggests || []).map(s => s.Text).slice(0, 8);
+        } catch (e) { return []; }
+    },
+
+    async getBaiduSuggestions(query) {
+        return new Promise((resolve) => {
+            const callbackName = '_baiduSug_' + Date.now();
+            window[callbackName] = (data) => {
+                resolve((data.s || []).slice(0, 8));
+                delete window[callbackName];
+                script.remove();
+            };
+            const script = document.createElement('script');
+            script.src = 'https://suggestion.baidu.com/su?action=opensearch&ie=utf-8&wd=' + encodeURIComponent(query) + '&cb=' + callbackName;
+            script.onerror = () => { resolve([]); delete window[callbackName]; script.remove(); };
+            document.head.appendChild(script);
+            setTimeout(() => { resolve([]); delete window[callbackName]; script.remove(); }, 3000);
+        });
+    },
+
+    async getDuckDuckGoSuggestions(query) {
+        try {
+            const res = await fetch('https://duckduckgo.com/ac/?q=' + encodeURIComponent(query) + '&type=list');
+            const data = await res.json();
+            return (data[1] || []).map(s => s[0]).slice(0, 8);
+        } catch (e) { return []; }
+    },
+
+    renderSuggestions(suggestions, query) {
+        const box = document.getElementById('searchSuggestions');
+        this.suggestionIndex = -1;
+        if (suggestions.length === 0) {
+            this.closeSuggestions();
+            return;
+        }
+        const lowerQuery = query.toLowerCase();
+        box.innerHTML = suggestions.map((s, i) => {
+            const highlighted = s.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<em>$1</em>');
+            return '<div class="suggestion-item" data-index="' + i + '" data-query="' + s + '">' +
+                '<i class="fas fa-magnifying-glass"></i>' +
+                '<span class="suggestion-text">' + highlighted + '</span>' +
+                '<i class="fas fa-arrow-up-left suggestion-arrow"></i>' +
+            '</div>';
+        }).join('');
+        box.classList.add('active');
+        box.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this.searchWithQuery(item.dataset.query);
+            });
+            item.addEventListener('mouseenter', () => {
+                box.querySelectorAll('.suggestion-item').forEach(s => s.classList.remove('active'));
+                item.classList.add('active');
+                this.suggestionIndex = parseInt(item.dataset.index);
+            });
+        });
+    },
+
+    handleSuggestionKeydown(e) {
+        const box = document.getElementById('searchSuggestions');
+        if (!box.classList.contains('active')) return;
+        const items = box.querySelectorAll('.suggestion-item');
+        if (items.length === 0) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            this.suggestionIndex = Math.min(this.suggestionIndex + 1, items.length - 1);
+            this.highlightSuggestion(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.suggestionIndex = Math.max(this.suggestionIndex - 1, 0);
+            this.highlightSuggestion(items);
+        } else if (e.key === 'Escape') {
+            this.closeSuggestions();
+        }
+    },
+
+    highlightSuggestion(items) {
+        items.forEach((item, i) => {
+            item.classList.toggle('active', i === this.suggestionIndex);
+            if (i === this.suggestionIndex) {
+                document.getElementById('searchInput').value = item.dataset.query;
+            }
+        });
+    },
+
+    closeSuggestions() {
+        document.getElementById('searchSuggestions').classList.remove('active');
+        this.suggestionIndex = -1;
     },
 
     selectEngine(id) {
@@ -171,18 +349,20 @@ const App = {
         const grid = document.getElementById('navGrid');
         const allItems = Storage.getNavItems();
         const items = allItems.filter(item => (item.category || '常用') === this.currentCategory);
-        grid.innerHTML = items.map(item => `
-            <a href="${item.url}" class="nav-item" data-id="${item.id}">
-                <div class="icon" style="background: ${item.color};">
-                    <i class="${item.icon}"></i>
-                </div>
-                <span class="name">${item.name}</span>
-            </a>
-        `).join('');
+        grid.innerHTML = items.map(item => {
+            const isImage = item.icon && !item.icon.startsWith('fa-');
+            const iconHtml = isImage
+                ? '<img src="' + item.icon + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'
+                : '<i class="' + item.icon + '"></i>';
+            return '<a href="' + item.url + '" class="nav-item" data-id="' + item.id + '">' +
+                '<div class="icon" style="background: ' + item.color + ';">' + iconHtml + '</div>' +
+                '<span class="name">' + item.name + '</span></a>';
+        }).join('');
         grid.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                window.open(item.href, '_blank');
+                const url = Storage.resolveUrl(item.href);
+                window.open(url, '_blank');
             });
         });
     },
@@ -274,21 +454,27 @@ const App = {
         });
 
         const navList = document.getElementById('navItemsList');
-        navList.innerHTML = navItems.map(item => `
-            <div class="nav-item-row" data-id="${item.id}">
-                <div class="item-icon" style="background: ${item.color};">
-                    <i class="${item.icon}"></i>
+        navList.innerHTML = navItems.map(item => {
+            const isImage = item.icon && !item.icon.startsWith('fa-');
+            const iconHtml = isImage
+                ? '<img src="' + item.icon + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'
+                : '<i class="' + item.icon + '"></i>';
+            return `
+                <div class="nav-item-row" data-id="${item.id}">
+                    <div class="item-icon" style="background: ${item.color};">
+                        ${iconHtml}
+                    </div>
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-url">${item.category || '常用'} · ${item.url}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i></button>
+                        <button class="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
-                <div class="item-info">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-url">${item.category || '常用'} · ${item.url}</div>
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i></button>
-                    <button class="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         navList.querySelectorAll('.edit-item').forEach(btn => {
             btn.addEventListener('click', () => this.editNavItem(btn.dataset.id));
         });
@@ -322,6 +508,9 @@ const App = {
 
         // 工具配置列表
         this.renderToolsConfig();
+
+        // DNS映射列表
+        this.renderDnsMap();
     },
 
     renderToolsConfig() {
@@ -401,11 +590,85 @@ const App = {
 
     applyToolsOrder() {
         const config = Storage.getToolsConfig();
-        const section = document.querySelector('.tools-section');
+        const section = document.getElementById('toolsSection');
         config.forEach(tool => {
             const el = document.getElementById('tool-' + tool.id);
             if (el) section.appendChild(el);
         });
+    },
+
+    renderDnsMap() {
+        const list = document.getElementById('dnsMapList');
+        const maps = Storage.getDnsMap();
+        if (maps.length === 0) {
+            list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:13px;padding:12px;opacity:0.5;">暂无映射规则</div>';
+            return;
+        }
+        list.innerHTML = maps.map((m, i) => `
+            <div class="dns-map-row" data-index="${i}">
+                <div class="dns-map-icon"><i class="fas fa-server"></i></div>
+                <div class="dns-map-info">
+                    <div>
+                        <span class="dns-map-domain">${m.domain}</span>
+                        <span class="dns-map-arrow"><i class="fas fa-arrow-right"></i></span>
+                        <span class="dns-map-ip">${m.ip}</span>
+                    </div>
+                    ${m.note ? '<div class="dns-map-note">' + m.note + '</div>' : ''}
+                </div>
+                <div class="item-actions">
+                    <button class="edit-item" data-index="${i}"><i class="fas fa-edit"></i></button>
+                    <button class="delete-item" data-index="${i}"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+        list.querySelectorAll('.edit-item').forEach(btn => {
+            btn.addEventListener('click', () => this.editDnsMap(parseInt(btn.dataset.index)));
+        });
+        list.querySelectorAll('.delete-item').forEach(btn => {
+            btn.addEventListener('click', () => this.deleteDnsMap(parseInt(btn.dataset.index)));
+        });
+    },
+
+    openDnsModal(index) {
+        const isEdit = index !== undefined;
+        document.getElementById('dnsModalTitle').textContent = isEdit ? '编辑 DNS 映射' : '添加 DNS 映射';
+        const maps = Storage.getDnsMap();
+        document.getElementById('dnsEditIndex').value = isEdit ? index : '';
+        document.getElementById('dnsEditDomain').value = isEdit ? maps[index].domain : '';
+        document.getElementById('dnsEditIp').value = isEdit ? maps[index].ip : '';
+        document.getElementById('dnsEditNote').value = isEdit ? (maps[index].note || '') : '';
+        document.getElementById('dnsModal').classList.add('active');
+    },
+
+    editDnsMap(index) {
+        this.openDnsModal(index);
+    },
+
+    saveDnsMap(e) {
+        e.preventDefault();
+        const index = document.getElementById('dnsEditIndex').value;
+        const domain = document.getElementById('dnsEditDomain').value.trim();
+        const ip = document.getElementById('dnsEditIp').value.trim();
+        const note = document.getElementById('dnsEditNote').value.trim();
+        if (!domain || !ip) return;
+        const maps = Storage.getDnsMap();
+        const entry = { domain, ip, note };
+        if (index !== '') {
+            maps[parseInt(index)] = entry;
+        } else {
+            maps.push(entry);
+        }
+        Storage.setDnsMap(maps);
+        this.renderDnsMap();
+        this.closeModal('dnsModal');
+    },
+
+    deleteDnsMap(index) {
+        if (!confirm('确定删除这条映射规则？')) return;
+        const maps = Storage.getDnsMap();
+        maps.splice(index, 1);
+        Storage.setDnsMap(maps);
+        this.renderDnsMap();
     },
 
     openNavModal(item) {
@@ -422,10 +685,31 @@ const App = {
                 '<option value="' + cat + '" ' + (item && item.category === cat ? 'selected' : '') + '>' + cat + '</option>'
             ).join('');
         if (item) categorySelect.value = item.category;
+
+        // 图标处理
         this.selectedIcon = item ? item.icon : 'fa-solid fa-link';
-        document.querySelectorAll('.icon-option').forEach(opt => {
-            opt.classList.toggle('selected', opt.dataset.icon === this.selectedIcon);
-        });
+        const area = document.getElementById('iconUploadArea');
+        const preview = document.getElementById('iconPreview');
+        const clearBtn = area.querySelector('.icon-upload-clear');
+        if (clearBtn) clearBtn.remove();
+
+        if (item && item.icon && !item.icon.startsWith('fa-')) {
+            // 自定义图片图标
+            area.classList.add('active');
+            preview.innerHTML = '<img src="' + item.icon + '">';
+            document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+            const cb = document.createElement('button');
+            cb.className = 'icon-upload-clear';
+            cb.innerHTML = '<i class="fas fa-times"></i>';
+            cb.addEventListener('click', (ev) => { ev.stopPropagation(); this.clearIconUpload(); });
+            area.appendChild(cb);
+        } else {
+            area.classList.remove('active');
+            preview.innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
+            document.querySelectorAll('.icon-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.icon === this.selectedIcon);
+            });
+        }
         document.getElementById('editModal').classList.add('active');
     },
 
@@ -595,6 +879,49 @@ const App = {
 
     closeModal(id) {
         document.getElementById(id).classList.remove('active');
+    },
+
+    handleIconUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 200 * 1024) {
+            alert('图片大小不能超过 200KB');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            this.selectedIcon = event.target.result;
+            const area = document.getElementById('iconUploadArea');
+            const preview = document.getElementById('iconPreview');
+            area.classList.add('active');
+            preview.innerHTML = '<img src="' + event.target.result + '">';
+            // 移除预设图标选中状态
+            document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+            // 添加清除按钮
+            if (!area.querySelector('.icon-upload-clear')) {
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'icon-upload-clear';
+                clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+                clearBtn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    this.clearIconUpload();
+                });
+                area.appendChild(clearBtn);
+            }
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    },
+
+    clearIconUpload() {
+        this.selectedIcon = 'fa-solid fa-link';
+        const area = document.getElementById('iconUploadArea');
+        const preview = document.getElementById('iconPreview');
+        area.classList.remove('active');
+        preview.innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
+        const clearBtn = area.querySelector('.icon-upload-clear');
+        if (clearBtn) clearBtn.remove();
+        document.querySelector('.icon-option[data-icon="fa-solid fa-link"]').classList.add('selected');
     },
 
     exportConfig() {
@@ -912,6 +1239,28 @@ const App = {
                 setTimeout(() => { status.style.opacity = '0.6'; }, 1000);
             }, 800);
         });
+    },
+
+    // ===== 一言 =====
+    initHitokoto() {
+        this.fetchHitokoto();
+        setInterval(() => this.fetchHitokoto(), 60000);
+    },
+
+    async fetchHitokoto() {
+        const textEl = document.getElementById('hitokotoText');
+        const fromEl = document.getElementById('hitokotoFrom');
+        try {
+            const res = await fetch('https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k');
+            const data = await res.json();
+            textEl.textContent = data.hitokoto;
+            fromEl.textContent = data.from || '';
+            textEl.classList.remove('hitokoto-loading');
+        } catch (e) {
+            textEl.textContent = '世界上最快乐的事，莫过于为理想而奋斗。';
+            fromEl.textContent = '苏格拉底';
+            textEl.classList.remove('hitokoto-loading');
+        }
     }
 };
 

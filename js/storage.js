@@ -9,7 +9,8 @@ const Storage = {
         LAYOUT_POSITION: 'layout_position',
         CURRENT_CATEGORY: 'current_category',
         TOOLS_CONFIG: 'tools_config',
-        CATEGORY_ORDER: 'category_order'
+        CATEGORY_ORDER: 'category_order',
+        DNS_MAP: 'dns_map'
     },
     CURRENT_VERSION: 4,
 
@@ -139,6 +140,24 @@ const Storage = {
 
     setCategoryOrder(order) {
         return this.set(this.KEYS.CATEGORY_ORDER, order);
+    },
+
+    getDnsMap() {
+        return this.get(this.KEYS.DNS_MAP) || [];
+    },
+
+    setDnsMap(map) {
+        return this.set(this.KEYS.DNS_MAP, map);
+    },
+
+    resolveUrl(url) {
+        const map = this.getDnsMap();
+        for (const entry of map) {
+            if (url.includes(entry.domain)) {
+                return url.replace(entry.domain, entry.ip);
+            }
+        }
+        return url;
     },
 
     getWallpaper() {
