@@ -228,7 +228,7 @@
     "current_category": "开发",
     "current_engine": "bing",
     "layout_position": "center",
-    "tools_collapsed": true,
+    "tools_collapsed": false,
     "tools_config": [
       {
         "id": "clock",
@@ -300,9 +300,20 @@
     ],
     "wallpaper": null,
     "wallpaper_history": [],
-    "todo_list": [],
-    "quick_note": "",
-    "clipboard_items": [],
+    "todo_list": [
+      {
+        "id": 1784734441800,
+        "text": "ffgfg",
+        "done": false
+      }
+    ],
+    "quick_note": "传递参数的",
+    "clipboard_items": [
+      {
+        "id": 1784734463632,
+        "text": "测试到处都是"
+      }
+    ],
     "dns_map": [
       {
         "domain": "nas.local",

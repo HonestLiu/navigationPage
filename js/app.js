@@ -56,12 +56,37 @@ const App = {
             this.refreshNav();
         } else if (type === 'engine_change') {
             this.refreshEngines();
+        } else if (type === 'airdrop_change') {
+            if (document.getElementById('airdropPanel').classList.contains('active')) this.refreshAirdrop();
         } else if (type === 'kv') {
             if (key === 'current_category') { this.currentCategory = data; this.renderCategoryTabs(); this.renderNavItems(); }
-            if (key === 'layout_position') { this.currentPosition = data; this.applyLayoutPosition(); }
-            if (key === 'current_engine') { this.renderEngineDropdown(); }
-            if (key === 'category_order') { this.renderCategoryTabs(); }
-            if (key === 'tools_config') { this.applyToolsVisibility(); this.renderToolsConfig(); }
+            else if (key === 'layout_position') { this.currentPosition = data; this.applyLayoutPosition(); }
+            else if (key === 'current_engine') { this.renderEngineDropdown(); }
+            else if (key === 'category_order') { this.renderCategoryTabs(); }
+            else if (key === 'tools_config') { this.applyToolsVisibility(); this.renderToolsConfig(); }
+            else if (key === 'todo_list') { this.todos = data || []; this.renderTodos(); }
+            else if (key === 'quick_note') {
+                const noteArea = document.getElementById('noteArea');
+                if (document.activeElement !== noteArea) { noteArea.value = data || ''; }
+            }
+            else if (key === 'clipboard_items') { this.clipboardItems = data || []; this.renderClipboard(); }
+            else if (key === 'wallpaper') {
+                if (data && data.url) {
+                    document.body.style.backgroundImage = `url(${data.url})`;
+                    document.body.classList.add('wallpaper-active');
+                } else {
+                    document.body.style.backgroundImage = '';
+                    document.body.classList.remove('wallpaper-active');
+                }
+                this.updateWallpaperPreview();
+            }
+            else if (key === 'wallpaper_history') { this.renderWallpaperHistory(); }
+            else if (key === 'tools_collapsed') {
+                const section = document.getElementById('toolsSection');
+                const arrow = document.getElementById('toolsArrow');
+                section.classList.toggle('collapsed', !!data);
+                arrow.classList.toggle('collapsed', !!data);
+            }
         }
     },
 
