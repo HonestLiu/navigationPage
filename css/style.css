@@ -2409,41 +2409,41 @@ body.wallpaper-active::before {
 .airdrop-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .airdrop-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-md);
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
     transition: var(--transition-normal);
 }
 
 .airdrop-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.055);
     border-color: rgba(255, 255, 255, 0.08);
 }
 
 .airdrop-item-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 11px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 17px;
     flex-shrink: 0;
 }
 
-.airdrop-item-icon.file { background: rgba(129, 140, 248, 0.12); color: var(--accent); }
-.airdrop-item-icon.image { background: rgba(236, 72, 153, 0.12); color: #f472b6; }
-.airdrop-item-icon.video { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
-.airdrop-item-icon.audio { background: rgba(52, 211, 153, 0.12); color: var(--success); }
-.airdrop-item-icon.archive { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
+.airdrop-item-icon.file { background: rgba(129, 140, 248, 0.1); color: #a5b4fc; }
+.airdrop-item-icon.image { background: rgba(236, 72, 153, 0.1); color: #f472b6; }
+.airdrop-item-icon.video { background: rgba(168, 85, 247, 0.1); color: #c084fc; }
+.airdrop-item-icon.audio { background: rgba(52, 211, 153, 0.1); color: var(--success); }
+.airdrop-item-icon.archive { background: rgba(251, 146, 60, 0.1); color: #fb923c; }
 
 .airdrop-item-info {
     flex: 1;
@@ -2456,36 +2456,40 @@ body.wallpaper-active::before {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0.9;
 }
 
 .airdrop-item-meta {
     font-size: 11px;
     color: var(--text-secondary);
-    opacity: 0.5;
+    opacity: 0.45;
     display: flex;
     gap: 8px;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 .airdrop-item-timer {
     font-size: 11px;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    padding: 3px 10px;
+    padding: 4px 10px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     color: var(--text-secondary);
+    opacity: 0.6;
     white-space: nowrap;
     flex-shrink: 0;
+    letter-spacing: 0.3px;
 }
 
 .airdrop-item-timer.urgent {
-    background: rgba(248, 113, 113, 0.12);
+    background: rgba(248, 113, 113, 0.1);
     color: var(--danger);
+    opacity: 1;
 }
 
 .airdrop-item-actions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
     opacity: 0;
     transition: opacity var(--transition-fast);
@@ -2495,7 +2499,8 @@ body.wallpaper-active::before {
     opacity: 1;
 }
 
-.airdrop-item-actions button {
+.airdrop-item-actions button,
+.airdrop-item-actions a {
     width: 34px;
     height: 34px;
     border-radius: var(--radius-sm);
@@ -2508,30 +2513,39 @@ body.wallpaper-active::before {
     transition: var(--transition-normal);
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-secondary);
+    text-decoration: none;
+    flex-shrink: 0;
 }
 
 .airdrop-item-actions .adl-download {
-    background: rgba(129, 140, 248, 0.6);
-    color: white;
-    box-shadow: 0 2px 8px rgba(129, 140, 248, 0.25);
+    background: rgba(129, 140, 248, 0.15);
+    color: var(--accent);
 }
 
-.airdrop-item-actions .adl-download:hover { background: rgba(129, 140, 248, 0.8); box-shadow: 0 4px 14px rgba(129, 140, 248, 0.35); }
-.airdrop-item-actions .adl-delete:hover { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+.airdrop-item-actions .adl-download:hover {
+    background: rgba(129, 140, 248, 0.3);
+    color: #a5b4fc;
+}
+
+.airdrop-item-actions .adl-delete:hover {
+    background: rgba(248, 113, 113, 0.15);
+    color: var(--danger);
+}
 
 .airdrop-empty {
     text-align: center;
-    padding: 36px 16px;
+    padding: 40px 16px;
     color: var(--text-secondary);
     opacity: 0.35;
     font-size: 13px;
 }
 
 .airdrop-empty i {
-    font-size: 36px;
+    font-size: 40px;
     display: block;
-    margin-bottom: 12px;
-    opacity: 0.5;
+    margin-bottom: 14px;
+    opacity: 0.4;
+    color: var(--accent);
 }
 
 /* Settings Panel */
