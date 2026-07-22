@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航页</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 搜索区域 -->
+        <div class="search-section">
+            <div class="search-box">
+                <div class="search-engine-selector">
+                    <button class="engine-btn" id="engineBtn">
+                        <img id="engineIcon" src="" alt="搜索引擎">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="engine-dropdown" id="engineDropdown"></div>
+                </div>
+                <input type="text" id="searchInput" placeholder="搜索..." autocomplete="off">
+                <button class="search-btn" id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 导航区域 -->
+        <div class="nav-section">
+            <div class="nav-header">
+                <div class="nav-title">
+                    <h2 id="currentCategoryTitle">常用网站</h2>
+                </div>
+                <div class="category-tabs" id="categoryTabs"></div>
+            </div>
+            <div class="nav-grid" id="navGrid"></div>
+            <div class="nav-footer">
+                <button class="add-site-btn" id="addSiteBtn">
+                    <i class="fas fa-plus"></i>
+                    <span>添加网站</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 小工具区域 -->
+        <div class="tools-section" id="toolsSection">
+            <!-- 时钟 -->
+            <div class="tool-card" id="tool-clock">
+                <div class="tool-header">
+                    <i class="fas fa-clock"></i>
+                    <span>时钟</span>
+                </div>
+                <div class="tool-body clock-body">
+                    <div class="clock-time" id="clockTime">00:00:00</div>
+                    <div class="clock-date" id="clockDate">2024年1月1日 星期一</div>
+                </div>
+            </div>
+
+            <!-- 番茄钟 -->
+            <div class="tool-card" id="tool-pomodoro">
+                <div class="tool-header">
+                    <i class="fas fa-stopwatch"></i>
+                    <span>番茄钟</span>
+                </div>
+                <div class="tool-body pomodoro-body">
+                    <div class="pomodoro-display" id="pomodoroDisplay">25:00</div>
+                    <div class="pomodoro-progress">
+                        <div class="pomodoro-progress-bar" id="pomodoroBar"></div>
+                    </div>
+                    <div class="pomodoro-controls">
+                        <button class="pomodoro-btn" id="pomodoroStart" title="开始">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="pomodoro-btn" id="pomodoroPause" title="暂停" style="display:none;">
+                            <i class="fas fa-pause"></i>
+                        </button>
+                        <button class="pomodoro-btn" id="pomodoroReset" title="重置">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                    <div class="pomodoro-modes">
+                        <button class="pomodoro-mode active" data-minutes="25">专注 25m</button>
+                        <button class="pomodoro-mode" data-minutes="5">短休 5m</button>
+                        <button class="pomodoro-mode" data-minutes="15">长休 15m</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 待办清单 -->
+            <div class="tool-card tool-card-wide" id="tool-todo">
+                <div class="tool-header">
+                    <i class="fas fa-list-check"></i>
+                    <span>待办清单</span>
+                    <span class="todo-count" id="todoCount">0</span>
+                </div>
+                <div class="tool-body todo-body">
+                    <div class="todo-input-row">
+                        <input type="text" id="todoInput" placeholder="添加待办事项..." autocomplete="off">
+                        <button class="todo-add-btn" id="todoAddBtn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="todo-list" id="todoList"></div>
+                </div>
+            </div>
+
+            <!-- 快捷笔记 -->
+            <div class="tool-card tool-card-wide" id="tool-notes">
+                <div class="tool-header">
+                    <i class="fas fa-pen-to-square"></i>
+                    <span>快捷笔记</span>
+                    <span class="note-status" id="noteStatus">已保存</span>
+                </div>
+                <div class="tool-body note-body">
+                    <textarea id="noteArea" placeholder="在这里记录你的想法..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 壁纸按钮 -->
+        <button class="wallpaper-fab" id="wallpaperFab" title="壁纸">
+            <i class="fas fa-image"></i>
+        </button>
+
+        <!-- 设置按钮 -->
+        <button class="settings-fab" id="settingsFab" title="设置">
+            <i class="fas fa-cog"></i>
+        </button>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>设置</h3>
+            <button class="close-btn" id="closeSettings">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="settings-content">
+            <!-- 分类管理 -->
+            <div class="settings-section">
+                <h4>分类管理</h4>
+                <div class="category-list" id="categoryList"></div>
+                <button class="add-btn" id="addCategory">
+                    <i class="fas fa-plus"></i> 添加分类
+                </button>
+            </div>
+
+            <!-- 导航项管理 -->
+            <div class="settings-section">
+                <h4>导航项管理</h4>
+                <div class="nav-items-list" id="navItemsList"></div>
+                <button class="add-btn" id="addNavItem">
+                    <i class="fas fa-plus"></i> 添加导航项
+                </button>
+            </div>
+
+            <!-- 搜索引擎管理 -->
+            <div class="settings-section">
+                <h4>搜索引擎管理</h4>
+                <div class="engine-list" id="engineList"></div>
+                <button class="add-btn" id="addEngine">
+                    <i class="fas fa-plus"></i> 添加搜索引擎
+                </button>
+            </div>
+
+            <!-- 数据管理 -->
+            <div class="settings-section">
+                <h4>数据管理</h4>
+                <div class="data-actions">
+                    <button class="action-btn" id="exportBtn">
+                        <i class="fas fa-download"></i> 导出配置
+                    </button>
+                    <button class="action-btn" id="importBtn">
+                        <i class="fas fa-upload"></i> 导入配置
+                    </button>
+                    <button class="action-btn danger" id="resetBtn">
+                        <i class="fas fa-trash"></i> 重置
+                    </button>
+                </div>
+            </div>
+
+            <!-- 布局位置 -->
+            <div class="settings-section">
+                <h4>布局位置</h4>
+                <div class="position-options">
+                    <button class="position-btn" data-position="top">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>顶部</span>
+                    </button>
+                    <button class="position-btn active" data-position="center">
+                        <i class="fas fa-arrows-alt-v"></i>
+                        <span>居中</span>
+                    </button>
+                    <button class="position-btn" data-position="bottom">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>底部</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 小工具设置 -->
+            <div class="settings-section">
+                <h4>小工具</h4>
+                <div class="tools-config-list" id="toolsConfigList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分类编辑弹窗 -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="categoryModalTitle">添加分类</h3>
+                <button class="close-btn" id="closeCategoryModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="categoryForm">
+                <input type="hidden" id="categoryEditId">
+                <div class="form-group">
+                    <label for="categoryEditName">分类名称</label>
+                    <input type="text" id="categoryEditName" required placeholder="如: 开发、常用、社交">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn" id="cancelCategoryEdit">取消</button>
+                    <button type="submit" class="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加导航项</h3>
+                <button class="close-btn" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label for="editName">名称</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editUrl">URL</label>
+                    <input type="url" id="editUrl" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory">分类</label>
+                    <select id="editCategory" required></select>
+                </div>
+                <div class="form-group">
+                    <label>图标</label>
+                    <div class="icon-picker" id="iconPicker">
+                        <div class="icon-option selected" data-icon="fa-solid fa-link">
+                            <i class="fa-solid fa-link"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-globe">
+                            <i class="fa-solid fa-globe"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-bookmark">
+                            <i class="fa-solid fa-bookmark"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-star">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-heart">
+                            <i class="fa-solid fa-heart"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-rocket">
+                            <i class="fa-solid fa-rocket"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-bolt">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-fire">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-github">
+                            <i class="fa-brands fa-github"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-google">
+                            <i class="fa-brands fa-google"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-twitter">
+                            <i class="fa-brands fa-twitter"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-youtube">
+                            <i class="fa-brands fa-youtube"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-bilibili">
+                            <i class="fa-brands fa-bilibili"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-weibo">
+                            <i class="fa-brands fa-weibo"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-brands fa-telegram">
+                            <i class="fa-brands fa-telegram"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-code">
+                            <i class="fa-solid fa-code"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-palette">
+                            <i class="fa-solid fa-palette"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-music">
+                            <i class="fa-solid fa-music"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-film">
+                            <i class="fa-solid fa-film"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-cart-shopping">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-solid fa-gamepad">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editColor">主题色</label>
+                    <div class="color-input-wrap">
+                        <input type="color" id="editColor" value="#6366f1">
+                        <span class="color-hex" id="editColorHex">#6366f1</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn" id="cancelEdit">取消</button>
+                    <button type="submit" class="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 搜索引擎编辑弹窗 -->
+    <div class="modal" id="engineModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="engineModalTitle">添加搜索引擎</h3>
+                <button class="close-btn" id="closeEngineModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="engineForm">
+                <input type="hidden" id="engineEditId">
+                <div class="form-group">
+                    <label for="engineEditName">名称</label>
+                    <input type="text" id="engineEditName" required>
+                </div>
+                <div class="form-group">
+                    <label for="engineEditUrl">搜索URL (%s 替换为关键词)</label>
+                    <input type="url" id="engineEditUrl" placeholder="https://www.google.com/search?q=%s" required>
+                </div>
+                <div class="form-group">
+                    <label for="engineEditIcon">图标 (Font Awesome class)</label>
+                    <input type="text" id="engineEditIcon" placeholder="如: fa-solid fa-magnifying-glass">
+                </div>
+                <div class="form-group">
+                    <label for="engineEditColor">主题色</label>
+                    <input type="color" id="engineEditColor" value="#6366f1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn" id="cancelEngineEdit">取消</button>
+                    <button type="submit" class="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 文件导入 -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- 壁纸切换面板 -->
+    <div class="wallpaper-panel" id="wallpaperPanel">
+        <div class="wallpaper-header">
+            <h3>壁纸设置</h3>
+            <button class="close-btn" id="closeWallpaper">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="wallpaper-content">
+            <div class="current-wallpaper">
+                <img id="currentWallpaperPreview" src="" alt="当前壁纸">
+                <div class="wallpaper-overlay">
+                    <span>当前壁纸</span>
+                </div>
+            </div>
+            <div class="wallpaper-options">
+                <button class="wallpaper-option" id="bingWallpaper">
+                    <i class="fas fa-cloud-sun"></i>
+                    <span>必应每日壁纸</span>
+                </button>
+                <button class="wallpaper-option" id="uploadWallpaper">
+                    <i class="fas fa-upload"></i>
+                    <span>上传自定义壁纸</span>
+                </button>
+                <button class="wallpaper-option" id="randomBing">
+                    <i class="fas fa-random"></i>
+                    <span>随机必应壁纸</span>
+                </button>
+                <button class="wallpaper-option danger" id="resetWallpaper">
+                    <i class="fas fa-undo"></i>
+                    <span>恢复默认</span>
+                </button>
+            </div>
+            <div class="wallpaper-history" id="wallpaperHistory">
+                <h4>历史壁纸</h4>
+                <div class="history-grid"></div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="wallpaperFileInput" accept="image/*" style="display: none;">
+
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
