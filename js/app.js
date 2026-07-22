@@ -14,6 +14,7 @@ const App = {
         this.currentCategory = await Storage.get('current_category') || '常用';
         this.currentPosition = await Storage.get('layout_position') || 'center';
         this._cache_category_order = await Storage.get('category_order') || [];
+        this._cache_dns = await Storage.get('dns_map') || [];
         this.navItems = await Storage.getNavItems();
         this.engines = await Storage.getEngines();
 
