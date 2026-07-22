@@ -225,8 +225,8 @@
     }
   ],
   "kv": {
-    "current_category": "开发",
-    "current_engine": "google",
+    "current_category": "购物",
+    "current_engine": "bing",
     "layout_position": "center",
     "tools_collapsed": true,
     "tools_config": [
@@ -303,17 +303,13 @@
     "todo_list": [],
     "quick_note": "",
     "clipboard_items": [],
-    "dns_map": [],
-    "airdrop_files": [
+    "dns_map": [
       {
-        "id": "4553b3b57e2012e5",
-        "name": "test.txt",
-        "size": 11,
-        "mime": "text/plain",
-        "path": "/Users/lc/Develop/navigationPage/server/uploads/4553b3b57e2012e5.txt",
-        "createdAt": 1784730531507,
-        "expiresAt": 1784730831507
+        "domain": "nas.local",
+        "ip": "192.168.31.191",
+        "note": "家庭NAS"
       }
-    ]
+    ],
+    "airdrop_files": []
   }
 }

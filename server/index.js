@@ -8,12 +8,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_PATH = path.join(__dirname, 'data.json');
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
+const WALLPAPER_DIR = path.join(__dirname, 'wallpapers');
 
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+if (!fs.existsSync(WALLPAPER_DIR)) fs.mkdirSync(WALLPAPER_DIR, { recursive: true });
 
 app.use(cors());
 app.use(express.json({ limit: '10mb', strict: false }));
 app.use(express.static(path.join(__dirname, '..')));
+app.use('/wallpapers', express.static(WALLPAPER_DIR));
 
 function loadDB() {
     try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')); } catch (e) { return null; }
@@ -93,8 +96,14 @@ function initDB() {
 }
 
 let db = initDB();
-
 const sseClients = new Set();
+
+setInterval(() => {
+    for (const res of sseClients) {
+        try { res.write(':heartbeat\n\n'); } catch (e) { sseClients.delete(res); }
+    }
+}, 30000);
+
 function broadcast(event, data) {
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const res of sseClients) { try { res.write(msg); } catch (e) { sseClients.delete(res); } }
@@ -154,6 +163,34 @@ app.put('/api/engines/:id', (req, res) => {
 app.delete('/api/engines/:id', (req, res) => {
     db.engines = db.engines.filter(e => e.id !== req.params.id); saveDB(db);
     broadcast('engine_change', { action: 'delete', id: req.params.id }); res.json({ ok: true });
+});
+
+// === Hitokoto Proxy ===
+const https = require('https');
+app.get('/api/hitokoto', (req, res) => {
+    https.get('https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k', (r) => {
+        let data = '';
+        r.on('data', c => data += c);
+        r.on('end', () => { try { res.json(JSON.parse(data)); } catch (e) { res.json({ hitokoto: '世界上最快乐的事，莫过于为理想而奋斗。', from: '苏格拉底' }); } });
+    }).on('error', () => {
+        res.json({ hitokoto: '世界上最快乐的事，莫过于为理想而奋斗。', from: '苏格拉底' });
+    });
+});
+
+// === Wallpaper Upload ===
+app.post('/api/wallpaper/upload', express.raw({ limit: '10mb', type: '*/*' }), (req, res) => {
+    const ext = req.headers['x-wallpaper-ext'] || '.jpg';
+    const id = crypto.randomBytes(8).toString('hex');
+    const fileName = id + ext;
+    const filePath = path.join(WALLPAPER_DIR, fileName);
+    fs.writeFileSync(filePath, req.body);
+    res.json({ ok: true, url: '/wallpapers/' + fileName });
+});
+
+app.delete('/api/wallpaper/delete/:file', (req, res) => {
+    const filePath = path.join(WALLPAPER_DIR, req.params.file);
+    try { fs.unlinkSync(filePath); } catch (e) {}
+    res.json({ ok: true });
 });
 
 // === Airdrop ===

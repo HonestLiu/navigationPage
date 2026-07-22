@@ -3,13 +3,18 @@ const API = '/api';
 const Storage = {
     _cache: {},
     _listeners: [],
+    _evtSource: null,
+    _retryTimer: null,
 
     async init() {
         this._connectSSE();
     },
 
     _connectSSE() {
+        if (this._evtSource) { try { this._evtSource.close(); } catch (e) {} }
+        clearTimeout(this._retryTimer);
         const evtSource = new EventSource(API + '/sse');
+        this._evtSource = evtSource;
         evtSource.addEventListener('kv', (e) => {
             const { key, value } = JSON.parse(e.data);
             this._cache[key] = value;
@@ -22,7 +27,8 @@ const Storage = {
             this._notify('engine_change', null, JSON.parse(e.data));
         });
         evtSource.onerror = () => {
-            setTimeout(() => this._connectSSE(), 3000);
+            evtSource.close();
+            this._retryTimer = setTimeout(() => this._connectSSE(), 5000);
         };
     },
 

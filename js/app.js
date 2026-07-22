@@ -4,6 +4,10 @@ const App = {
     selectedIcon: 'fa-solid fa-link',
     navItems: [],
     engines: [],
+    _intervals: [],
+
+    _addInterval(fn, ms) { const id = setInterval(fn, ms); this._intervals.push(id); return id; },
+    _clearAllIntervals() { this._intervals.forEach(id => clearInterval(id)); this._intervals = []; },
 
     async init() {
         await Storage.init();
@@ -724,18 +728,35 @@ const App = {
 
     async uploadWallpaper(e) {
         const file = e.target.files[0]; if (!file) return;
+        const ext = file.name.split('.').pop() || 'jpg';
         const reader = new FileReader();
         reader.onload = async (ev) => {
-            document.body.style.backgroundImage = `url(${ev.target.result})`;
-            document.body.classList.add('wallpaper-active');
-            await Storage.set('wallpaper', { url: ev.target.result, timestamp: Date.now() });
-            const hist = await Storage.get('wallpaper_history') || [];
-            hist.unshift({ url: ev.target.result, name: file.name });
-            if (hist.length > 12) hist.pop();
-            await Storage.set('wallpaper_history', hist);
-            this.updateWallpaperPreview(); this.renderWallpaperHistory();
+            const progress = document.getElementById('wallpaperProgress');
+            if (progress) progress.style.display = 'flex';
+            try {
+                const res = await fetch('/api/wallpaper/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream', 'X-Wallpaper-Ext': '.' + ext },
+                    body: new Uint8Array(ev.target.result)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    document.body.style.backgroundImage = `url(${data.url})`;
+                    document.body.classList.add('wallpaper-active');
+                    await Storage.set('wallpaper', { url: data.url, timestamp: Date.now() });
+                    const hist = await Storage.get('wallpaper_history') || [];
+                    hist.unshift({ url: data.url, name: file.name });
+                    if (hist.length > 8) {
+                        const removed = hist.splice(8);
+                        for (const h of removed) { if (h.url && h.url.startsWith('/wallpapers/')) { try { await fetch('/api/wallpaper/delete' + h.url.replace('/wallpapers', ''), { method: 'DELETE' }); } catch (e) {} } }
+                    }
+                    await Storage.set('wallpaper_history', hist);
+                    this.updateWallpaperPreview(); this.renderWallpaperHistory();
+                }
+            } catch (err) { alert('上传失败'); }
+            if (progress) progress.style.display = 'none';
         };
-        reader.readAsDataURL(file); e.target.value = '';
+        reader.readAsArrayBuffer(file); e.target.value = '';
     },
 
     async resetWallpaper() {
@@ -760,8 +781,8 @@ const App = {
         }));
     },
 
-    // === Tools: Clock ===
-    initClock() { this.updateClock(); setInterval(() => this.updateClock(), 1000); },
+    // === Tools: Clock + Timestamp (shared timer) ===
+    initClock() { this.updateClock(); this.updateTsNow(); this._addInterval(() => { this.updateClock(); this.updateTsNow(); }, 1000); },
     updateClock() {
         const n = new Date(), h = String(n.getHours()).padStart(2, '0'), m = String(n.getMinutes()).padStart(2, '0'), s = String(n.getSeconds()).padStart(2, '0');
         document.getElementById('clockTime').textContent = `${h}:${m}:${s}`;
@@ -904,7 +925,6 @@ const App = {
 
     // === Tools: Timestamp ===
     initTimestamp() {
-        this.updateTsNow(); setInterval(() => this.updateTsNow(), 1000);
         document.getElementById('tsToDate').addEventListener('click', () => this.tsToDate());
         document.getElementById('tsNowBtn').addEventListener('click', () => { document.getElementById('tsInput').value = Math.floor(Date.now() / 1000); this.tsToDate(); });
         document.getElementById('tsCopyBtn').addEventListener('click', () => { const v = document.getElementById('tsOutput').value || document.getElementById('tsInput').value; if (v) navigator.clipboard.writeText(v); });
@@ -921,10 +941,10 @@ const App = {
     },
 
     // === Hitokoto ===
-    initHitokoto() { this.fetchHitokoto(); setInterval(() => this.fetchHitokoto(), 60000); },
+    initHitokoto() { this.fetchHitokoto(); this._addInterval(() => this.fetchHitokoto(), 60000); },
     async fetchHitokoto() {
         const t = document.getElementById('hitokotoText'), f = document.getElementById('hitokotoFrom');
-        try { const r = await fetch('https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k'); const d = await r.json(); t.textContent = d.hitokoto; f.textContent = d.from || ''; t.classList.remove('hitokoto-loading'); }
+        try { const r = await fetch('/api/hitokoto'); const d = await r.json(); t.textContent = d.hitokoto; f.textContent = d.from || ''; t.classList.remove('hitokoto-loading'); }
         catch (e) { t.textContent = '世界上最快乐的事，莫过于为理想而奋斗。'; f.textContent = '苏格拉底'; t.classList.remove('hitokoto-loading'); }
     },
 
@@ -1132,7 +1152,11 @@ const App = {
 
     startAirdropTimer() {
         clearInterval(this.airdropTimer);
-        this.airdropTimer = setInterval(() => this.renderAirdropList(), 1000);
+        this.airdropTimer = this._addInterval(() => {
+            const panel = document.getElementById('airdropPanel');
+            if (!panel.classList.contains('active')) { clearInterval(this.airdropTimer); this.airdropTimer = null; return; }
+            this.renderAirdropList();
+        }, 1000);
     },
 
     getAirdropIcon(mime) {
