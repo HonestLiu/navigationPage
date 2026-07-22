@@ -74,9 +74,11 @@ const App = {
                 if (data && data.url) {
                     document.body.style.backgroundImage = `url(${data.url})`;
                     document.body.classList.add('wallpaper-active');
+                    this._detectWallpaperBrightness(data.url);
                 } else {
                     document.body.style.backgroundImage = '';
                     document.body.classList.remove('wallpaper-active');
+                    document.body.classList.remove('wallpaper-light');
                 }
                 this.updateWallpaperPreview();
             }
@@ -709,7 +711,32 @@ const App = {
 
     async _loadWallpaper() {
         const wp = await Storage.get('wallpaper');
-        if (wp && wp.url) { document.body.style.backgroundImage = `url(${wp.url})`; document.body.classList.add('wallpaper-active'); }
+        if (wp && wp.url) {
+            document.body.style.backgroundImage = `url(${wp.url})`;
+            document.body.classList.add('wallpaper-active');
+            this._detectWallpaperBrightness(wp.url);
+        }
+    },
+
+    _detectWallpaperBrightness(url) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const size = 32;
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, size, size);
+            const data = ctx.getImageData(0, 0, size, size).data;
+            let total = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                total += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            }
+            const avg = total / (size * size);
+            document.body.classList.toggle('wallpaper-light', avg > 140);
+        };
+        img.onerror = () => { document.body.classList.remove('wallpaper-light'); };
+        img.src = url;
     },
 
     async updateWallpaperPreview() {
@@ -725,6 +752,7 @@ const App = {
             const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
             document.body.style.backgroundImage = `url(${url})`;
             document.body.classList.add('wallpaper-active');
+            this._detectWallpaperBrightness(url);
             await Storage.set('wallpaper', { url, timestamp: Date.now() });
             const hist = await Storage.get('wallpaper_history') || [];
             hist.unshift({ url, name: data.images[0].copyright });
@@ -742,6 +770,7 @@ const App = {
             const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
             document.body.style.backgroundImage = `url(${url})`;
             document.body.classList.add('wallpaper-active');
+            this._detectWallpaperBrightness(url);
             await Storage.set('wallpaper', { url, timestamp: Date.now() });
             const hist = await Storage.get('wallpaper_history') || [];
             hist.unshift({ url, name: data.images[0].copyright });
@@ -768,6 +797,7 @@ const App = {
                 if (data.ok) {
                     document.body.style.backgroundImage = `url(${data.url})`;
                     document.body.classList.add('wallpaper-active');
+                    this._detectWallpaperBrightness(data.url);
                     await Storage.set('wallpaper', { url: data.url, timestamp: Date.now() });
                     const hist = await Storage.get('wallpaper_history') || [];
                     hist.unshift({ url: data.url, name: file.name });
@@ -787,6 +817,7 @@ const App = {
     async resetWallpaper() {
         document.body.style.backgroundImage = '';
         document.body.classList.remove('wallpaper-active');
+        document.body.classList.remove('wallpaper-light');
         await Storage.set('wallpaper', null);
         this.updateWallpaperPreview();
     },
@@ -801,6 +832,7 @@ const App = {
         grid.querySelectorAll('.history-item').forEach(item => item.addEventListener('click', async () => {
             document.body.style.backgroundImage = `url(${item.dataset.url})`;
             document.body.classList.add('wallpaper-active');
+            this._detectWallpaperBrightness(item.dataset.url);
             await Storage.set('wallpaper', { url: item.dataset.url, timestamp: Date.now() });
             this.renderWallpaperHistory(); this.updateWallpaperPreview();
         }));

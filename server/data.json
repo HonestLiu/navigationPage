@@ -183,8 +183,8 @@
     {
       "id": 21,
       "sort_order": 20,
-      "name": "Test",
-      "url": "https://12.1.1.1",
+      "name": "NAS",
+      "url": "http://nas.local:5055",
       "icon": "fa-solid fa-link",
       "color": "#6366f1",
       "category": "常用"
@@ -298,8 +298,16 @@
       "影音",
       "购物"
     ],
-    "wallpaper": null,
-    "wallpaper_history": [],
+    "wallpaper": {
+      "url": "/wallpapers/b8b1b3b9270a0ca8.jpeg",
+      "timestamp": 1784735134598
+    },
+    "wallpaper_history": [
+      {
+        "url": "/wallpapers/b8b1b3b9270a0ca8.jpeg",
+        "name": "X0_6rTZl.jpeg"
+      }
+    ],
     "todo_list": [
       {
         "id": 1784734441800,
