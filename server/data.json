@@ -237,7 +237,7 @@
     "current_category": "Docker",
     "current_engine": "bing",
     "layout_position": "center",
-    "tools_collapsed": true,
+    "tools_collapsed": false,
     "tools_config": [
       {
         "id": "clock",
@@ -352,7 +352,7 @@
         "content": "传递参数的",
         "pinned": false,
         "createdAt": 1784738930253,
-        "updatedAt": 1784738930253
+        "updatedAt": 1784764068823
       }
     ],
     "theme_mode": "light"

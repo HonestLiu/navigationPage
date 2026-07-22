@@ -26,7 +26,6 @@ const App = {
         this.renderEngines();
         this.renderEngineDropdown();
         this.applyLayoutPosition();
-        this.initTheme();
         this.initClock();
         this.initPomodoro();
         this.initTodo();
@@ -92,7 +91,6 @@ const App = {
                 section.classList.toggle('collapsed', !!data);
                 arrow.classList.toggle('collapsed', !!data);
             }
-            else if (key === 'theme_mode') { this.applyTheme(data || 'dark'); this.renderThemeButtons(); }
         }
     },
 
@@ -201,9 +199,6 @@ const App = {
         });
 
         document.addEventListener('click', (e) => {
-            const btn = e.target.closest('.theme-btn');
-            if (btn) this.setTheme(btn.dataset.theme);
-
             const expandBtn = e.target.closest('.tool-expand-btn');
             if (expandBtn) this.expandTool(expandBtn.dataset.tool);
 
@@ -396,44 +391,6 @@ const App = {
         document.querySelectorAll('.position-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.position === this.currentPosition));
     },
 
-    // === Theme ===
-    _themeMode: 'dark',
-    _systemThemeMedia: null,
-
-    async initTheme() {
-        const cookieVal = (document.cookie.match(/theme_mode=([^;]+)/) || [])[1];
-        const serverVal = await Storage.get('theme_mode');
-        this._themeMode = cookieVal || serverVal || 'dark';
-        this.applyTheme(this._themeMode);
-        this._systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
-        this._systemThemeMedia.addEventListener('change', () => {
-            if (this._themeMode === 'system') this.applyTheme('system');
-        });
-    },
-
-    applyTheme(mode) {
-        this._themeMode = mode;
-        let effective = mode;
-        if (mode === 'system') {
-            effective = this._systemThemeMedia.matches ? 'dark' : 'light';
-        }
-        document.documentElement.classList.toggle('light-theme', effective === 'light');
-    },
-
-    async setTheme(mode) {
-        this._themeMode = mode;
-        this.applyTheme(mode);
-        document.cookie = 'theme_mode=' + mode + ';path=/;max-age=31536000';
-        await Storage.set('theme_mode', mode);
-        this.renderThemeButtons();
-    },
-
-    renderThemeButtons() {
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.theme === this._themeMode);
-        });
-    },
-
     toggleSettings() { document.getElementById('settingsPanel').classList.toggle('active'); if (document.getElementById('settingsPanel').classList.contains('active')) this.renderSettingsLists(); },
     toggleWallpaperPanel() { const p = document.getElementById('wallpaperPanel'); p.classList.toggle('active'); if (p.classList.contains('active')) { this.updateWallpaperPreview(); this.renderWallpaperHistory(); } },
     closeModal(id) { document.getElementById(id).classList.remove('active'); },
@@ -449,7 +406,6 @@ const App = {
     // === Tool Expand ===
     expandTool(toolId) {
         const overlay = document.getElementById('toolOverlay');
-        const body = document.getElementById('toolOverlayBody');
         const card = document.getElementById('tool-' + toolId);
         if (!card) return;
 
@@ -459,7 +415,7 @@ const App = {
         expanded.className = 'tool-card-expanded';
         const header = document.createElement('div');
         header.className = 'tool-overlay-header';
-        header.innerHTML = `<span class="tool-overlay-title">${toolTitle}</span><button class="tool-overlay-close" id="toolOverlayCloseInner"><i class="fas fa-times"></i></button>`;
+        header.innerHTML = `<span class="tool-overlay-title">${toolTitle}</span><button class="tool-overlay-close"><i class="fas fa-times"></i></button>`;
         expanded.appendChild(header);
 
         const clone = card.querySelector('.tool-body').cloneNode(true);
@@ -467,8 +423,8 @@ const App = {
         clone.style.overflow = 'auto';
         expanded.appendChild(clone);
 
-        body.innerHTML = '';
-        body.appendChild(expanded);
+        overlay.innerHTML = '';
+        overlay.appendChild(expanded);
         overlay.classList.add('active');
 
         header.querySelector('.tool-overlay-close').addEventListener('click', () => this.closeOverlay());
@@ -490,10 +446,34 @@ const App = {
         if (!input || !preview) return;
         const srcInput = document.getElementById('mdInput');
         input.value = srcInput.value;
+        const syncPreview = () => {
+            let text = input.value;
+            if (!text.trim()) { preview.innerHTML = '<p class="md-placeholder">预览区域</p>'; return; }
+            text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/^---$/gm, '<hr>')
+                .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/^\- (.+)$/gm, '<li>$1</li>')
+                .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, (m) => '<ul>' + m + '</ul>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+                .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+                .replace(/\n{2,}/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            preview.innerHTML = '<p>' + text + '</p>';
+        };
         input.addEventListener('input', () => {
             srcInput.value = input.value;
             srcInput.dispatchEvent(new Event('input'));
+            syncPreview();
         });
+        syncPreview();
     },
 
     initExpandedDiff(container) {
@@ -549,109 +529,128 @@ const App = {
     },
 
     initExpandedNotes(container) {
-        this._overlayNotesList = container.querySelector('#notesList');
-        this._overlayNoteEditor = container.querySelector('#noteEditor');
-        this._overlayNoteTitle = container.querySelector('#noteTitle');
-        this._overlayNoteArea = container.querySelector('#noteArea');
-        this._overlayNoteBack = container.querySelector('#noteBackBtn');
-        this._overlayNotePin = container.querySelector('#notePinBtn');
-        this._overlayNoteDelete = container.querySelector('#noteDeleteBtn');
-        this._overlayNoteNew = container.querySelector('#noteNewBtn');
+        container.innerHTML = `<div class="notes-expanded">
+            <div class="notes-sidebar">
+                <div class="notes-sidebar-header">
+                    <span>笔记</span>
+                    <button class="notes-new-btn" id="overlayNoteNew"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="notes-sidebar-list" id="overlayNotesList"></div>
+            </div>
+            <div class="notes-editor-area" id="overlayNoteEditor">
+                <div class="notes-editor-empty">
+                    <i class="fas fa-pen-to-square"></i>
+                    <span>选择或新建笔记</span>
+                </div>
+            </div>
+        </div>`;
 
-        if (this._overlayNoteBack) this._overlayNoteBack.addEventListener('click', () => this.showOverlayNotesList());
-        if (this._overlayNoteNew) this._overlayNoteNew.addEventListener('click', () => this.createOverlayNote());
-        if (this._overlayNotePin) this._overlayNotePin.addEventListener('click', () => this.toggleOverlayNotePin());
-        if (this._overlayNoteDelete) this._overlayNoteDelete.addEventListener('click', () => this.deleteOverlayNote());
-        if (this._overlayNoteTitle) this._overlayNoteTitle.addEventListener('input', () => this.saveOverlayNote());
-        if (this._overlayNoteArea) this._overlayNoteArea.addEventListener('input', () => this.saveOverlayNote());
+        const list = container.querySelector('#overlayNotesList');
+        const editorArea = container.querySelector('#overlayNoteEditor');
 
-        this.renderOverlayNotesList();
+        container.querySelector('#overlayNoteNew').addEventListener('click', () => {
+            const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
+            this._notes.unshift(note);
+            this.saveNotes();
+            this._openOverlayNote(note.id, list, editorArea);
+            this.renderOverlayNotesList(list);
+        });
+
+        this._overlayNotesList = list;
+        this.renderOverlayNotesList(list);
+
+        if (this._currentNoteId) {
+            this._openOverlayNote(this._currentNoteId, list, editorArea);
+        }
     },
 
-    showOverlayNotesList() {
-        if (this._overlayNotesList) this._overlayNotesList.style.display = '';
-        if (this._overlayNoteEditor) this._overlayNoteEditor.style.display = 'none';
-        this.renderOverlayNotesList();
-    },
-
-    renderOverlayNotesList() {
-        if (!this._overlayNotesList) return;
+    renderOverlayNotesList(listEl) {
+        const list = listEl || this._overlayNotesList;
+        if (!list) return;
         const notes = this._notes || [];
         const pinned = notes.filter(n => n.pinned);
         const unpinned = notes.filter(n => !n.pinned);
         const sorted = [...pinned, ...unpinned];
 
         if (sorted.length === 0) {
-            this._overlayNotesList.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-3);font-size:12px;">暂无笔记，点击下方新建</div>';
+            list.innerHTML = '<div class="notes-empty">暂无笔记<br><small>点击 + 新建</small></div>';
             return;
         }
 
-        this._overlayNotesList.innerHTML = sorted.map(n => {
-            const preview = (n.content || '').slice(0, 60).replace(/\n/g, ' ');
+        list.innerHTML = sorted.map(n => {
+            const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
             const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
-            return `<div class="note-item ${this._currentNoteId === n.id ? 'active' : ''}" data-id="${n.id}">
-                ${n.pinned ? '<i class="fas fa-thumbtack note-item-pin"></i>' : ''}
+            return `<div class="note-item ${this._currentNoteId == n.id ? 'active' : ''}" data-id="${n.id}">
                 <div class="note-item-info">
                     <div class="note-item-title">${n.title || '无标题'}</div>
-                    <div class="note-item-preview">${preview || '空笔记'}</div>
+                    <div class="note-item-preview">${n.pinned ? '<i class="fas fa-thumbtack" style="color:var(--accent);font-size:9px;margin-right:4px;"></i>' : ''}${preview || '空笔记'}</div>
                 </div>
                 <span class="note-item-time">${time}</span>
             </div>`;
         }).join('');
 
-        this._overlayNotesList.querySelectorAll('.note-item').forEach(item => {
-            item.addEventListener('click', () => this.openOverlayNote(item.dataset.id));
+        list.querySelectorAll('.note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this._openOverlayNote(item.dataset.id, list, list.closest('.notes-expanded').querySelector('.notes-editor-area'));
+                list.querySelectorAll('.note-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
         });
     },
 
-    createOverlayNote() {
-        const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
-        this._notes.unshift(note);
-        this.saveNotes();
-        this.openOverlayNote(note.id);
-    },
-
-    openOverlayNote(id) {
+    _openOverlayNote(id, list, editorArea) {
         const note = this._notes.find(n => n.id == id);
         if (!note) return;
         this._currentNoteId = note.id;
-        if (this._overlayNotesList) this._overlayNotesList.style.display = 'none';
-        if (this._overlayNoteEditor) this._overlayNoteEditor.style.display = 'flex';
-        if (this._overlayNoteTitle) this._overlayNoteTitle.value = note.title;
-        if (this._overlayNoteArea) this._overlayNoteArea.value = note.content;
-        if (this._overlayNotePin) this._overlayNotePin.classList.toggle('pinned', note.pinned);
-    },
 
-    saveOverlayNote() {
-        if (!this._currentNoteId) return;
-        const note = this._notes.find(n => n.id == this._currentNoteId);
-        if (!note) return;
-        note.title = this._overlayNoteTitle?.value || '';
-        note.content = this._overlayNoteArea?.value || '';
-        note.updatedAt = Date.now();
-        this.saveNotes();
-    },
+        editorArea.innerHTML = `<div class="notes-editor-inner">
+            <div class="notes-editor-toolbar">
+                <input type="text" class="notes-title-input" id="overlayNoteTitle" value="${(note.title || '').replace(/"/g, '&quot;')}" placeholder="标题" autocomplete="off">
+                <div class="notes-toolbar-actions">
+                    <button class="note-pin-btn ${note.pinned ? 'pinned' : ''}" id="overlayNotePin" title="固定"><i class="fas fa-thumbtack"></i></button>
+                    <button class="note-delete-btn" id="overlayNoteDelete" title="删除"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <textarea class="notes-content-input" id="overlayNoteArea" placeholder="开始书写...">${note.content || ''}</textarea>
+        </div>`;
 
-    toggleOverlayNotePin() {
-        if (!this._currentNoteId) return;
-        const note = this._notes.find(n => n.id == this._currentNoteId);
-        if (!note) return;
-        note.pinned = !note.pinned;
-        note.updatedAt = Date.now();
-        if (this._overlayNotePin) this._overlayNotePin.classList.toggle('pinned', note.pinned);
-        this.saveNotes();
-        this.renderOverlayNotesList();
-        this.renderPinnedNotes();
-    },
+        const titleInput = editorArea.querySelector('#overlayNoteTitle');
+        const areaInput = editorArea.querySelector('#overlayNoteArea');
+        const pinBtn = editorArea.querySelector('#overlayNotePin');
+        const deleteBtn = editorArea.querySelector('#overlayNoteDelete');
 
-    deleteOverlayNote() {
-        if (!this._currentNoteId) return;
-        if (!confirm('删除此笔记？')) return;
-        this._notes = this._notes.filter(n => n.id != this._currentNoteId);
-        this._currentNoteId = null;
-        this.saveNotes();
-        this.showOverlayNotesList();
-        this.renderPinnedNotes();
+        titleInput.addEventListener('input', () => {
+            note.title = titleInput.value;
+            note.updatedAt = Date.now();
+            this.saveNotes();
+            this.renderOverlayNotesList(list);
+        });
+        areaInput.addEventListener('input', () => {
+            note.content = areaInput.value;
+            note.updatedAt = Date.now();
+            this.saveNotes();
+        });
+        pinBtn.addEventListener('click', () => {
+            note.pinned = !note.pinned;
+            note.updatedAt = Date.now();
+            pinBtn.classList.toggle('pinned', note.pinned);
+            this.saveNotes();
+            this.renderOverlayNotesList(list);
+            this.renderPinnedNotes();
+        });
+        deleteBtn.addEventListener('click', () => {
+            if (!confirm('删除此笔记？')) return;
+            this._notes = this._notes.filter(n => n.id != note.id);
+            this._currentNoteId = null;
+            this.saveNotes();
+            editorArea.innerHTML = `<div class="notes-editor-empty"><i class="fas fa-pen-to-square"></i><span>选择或新建笔记</span></div>`;
+            this.renderOverlayNotesList(list);
+            this.renderPinnedNotes();
+        });
+
+        if (list) {
+            list.querySelectorAll('.note-item').forEach(i => i.classList.toggle('active', i.dataset.id == id));
+        }
     },
 
     // === Settings Lists ===
@@ -707,7 +706,6 @@ const App = {
 
         this.renderDnsMap();
         this.renderToolsConfig();
-        this.renderThemeButtons();
     },
 
     async renderToolsConfig() {
@@ -1330,14 +1328,13 @@ const App = {
         }
         if (pinned.length === 0) { container.style.display = 'none'; return; }
         container.style.display = '';
-        container.innerHTML = `<div class="pinned-notes-title"><i class="fas fa-thumbtack"></i> 固定笔记</div>` +
-            pinned.map(n => {
-                const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
-                return `<div class="pinned-note-card" data-id="${n.id}">
-                    <div class="pinned-note-title">${n.title || '无标题'}</div>
-                    <div class="pinned-note-content">${preview || '空笔记'}</div>
-                </div>`;
-            }).join('');
+        container.innerHTML = pinned.map(n => {
+            const content = (n.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            return `<div class="pinned-note-card" data-id="${n.id}">
+                ${n.title ? `<div class="pinned-note-title">${n.title}</div>` : ''}
+                <div class="pinned-note-content">${content || '<span style="opacity:0.3">空笔记</span>'}</div>
+            </div>`;
+        }).join('');
         container.querySelectorAll('.pinned-note-card').forEach(card => {
             card.addEventListener('click', () => {
                 document.getElementById('toolsSection').classList.remove('collapsed');

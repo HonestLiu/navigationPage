@@ -3,19 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>导航页</title>
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=5">
     <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
-    <script>
-        (function() {
-            var m = document.cookie.match(/theme_mode=([^;]+)/);
-            var mode = m ? m[1] : 'dark';
-            if (mode === 'system') {
-                mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            }
-            if (mode === 'light') document.documentElement.classList.add('light-theme');
-        })();
-    </script>
 </head>
 <body>
     <div class="container">
@@ -490,25 +479,6 @@
                 </div>
             </div>
 
-            <!-- 主题模式 -->
-            <div class="settings-section">
-                <h4>主题模式</h4>
-                <div class="theme-options">
-                    <button class="theme-btn" data-theme="dark">
-                        <i class="fas fa-moon"></i>
-                        <span>深色</span>
-                    </button>
-                    <button class="theme-btn" data-theme="light">
-                        <i class="fas fa-sun"></i>
-                        <span>浅色</span>
-                    </button>
-                    <button class="theme-btn" data-theme="system">
-                        <i class="fas fa-circle-half-stroke"></i>
-                        <span>跟随系统</span>
-                    </button>
-                </div>
-            </div>
-
             <!-- 小工具设置 -->
             <div class="settings-section">
                 <h4>小工具</h4>
@@ -819,11 +789,9 @@
     </div>
 
     <!-- 工具展开覆盖层 -->
-    <div class="tool-overlay" id="toolOverlay">
-        <div class="tool-overlay-body" id="toolOverlayBody"></div>
-    </div>
+    <div class="tool-overlay" id="toolOverlay"></div>
 
     <script src="js/storage.js?v=3"></script>
-    <script src="js/app.js?v=3"></script>
+    <script src="js/app.js?v=5"></script>
 </body>
 </html>
