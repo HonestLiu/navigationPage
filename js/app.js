@@ -998,11 +998,28 @@ const App = {
     },
 
     // === Hitokoto ===
-    initHitokoto() { this.fetchHitokoto(); this._addInterval(() => this.fetchHitokoto(), 60000); },
+    initHitokoto() {
+        document.getElementById('hitokotoText').classList.add('hitokoto-loading');
+        this.fetchHitokoto();
+        this._addInterval(() => this.fetchHitokoto(), 120000);
+    },
     async fetchHitokoto() {
         const t = document.getElementById('hitokotoText'), f = document.getElementById('hitokotoFrom');
-        try { const r = await fetch('/api/hitokoto'); const d = await r.json(); t.textContent = d.hitokoto; f.textContent = d.from || ''; t.classList.remove('hitokoto-loading'); }
-        catch (e) { t.textContent = '世界上最快乐的事，莫过于为理想而奋斗。'; f.textContent = '苏格拉底'; t.classList.remove('hitokoto-loading'); }
+        try {
+            const r = await fetch('/api/hitokoto', { signal: AbortSignal.timeout(6000) });
+            if (!r.ok) throw new Error(r.status);
+            const d = await r.json();
+            if (d.hitokoto) {
+                t.textContent = d.hitokoto;
+                f.textContent = d.from ? `\u2014\u2014 ${d.from}` : '';
+                t.classList.remove('hitokoto-loading');
+                return;
+            }
+        } catch (e) {}
+        if (!t.classList.contains('hitokoto-loading')) return;
+        t.textContent = '世界上最快乐的事，莫过于为理想而奋斗。';
+        f.textContent = '\u2014\u2014 苏格拉底';
+        t.classList.remove('hitokoto-loading');
     },
 
     // === JSON 格式化 ===
@@ -1189,6 +1206,8 @@ const App = {
     // === 空投 ===
     airdropFiles: [],
     airdropTimer: null,
+
+    initAirdrop() {},
 
     toggleAirdrop() {
         const panel = document.getElementById('airdropPanel');

@@ -1521,8 +1521,6 @@ body.wallpaper-active::before { opacity: 0.3; }
     margin-left: 6px;
 }
 
-.hitokoto-from::before { content: '\2014\2014 '; }
-
 .hitokoto-loading { animation: pulse 1.5s ease-in-out infinite; }
 
 @keyframes pulse {
