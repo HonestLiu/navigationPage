@@ -30,6 +30,13 @@ const App = {
         this.initPassword();
         this.initClipboard();
         this.initTimestamp();
+        this.initJsonFormatter();
+        this.initMarkdown();
+        this.initRegex();
+        this.initColorTool();
+        this.initDiff();
+        this.initLorem();
+        this.initAirdrop();
         this.initHitokoto();
         this.applyToolsVisibility();
 
@@ -87,6 +94,20 @@ const App = {
             document.getElementById('engineDropdown').classList.toggle('active');
         });
 
+        document.getElementById('airdropFab').addEventListener('click', () => this.toggleAirdrop());
+        document.getElementById('closeAirdrop').addEventListener('click', () => this.toggleAirdrop());
+
+        document.getElementById('airdropUploadArea').addEventListener('click', () => document.getElementById('airdropFileInput').click());
+        document.getElementById('airdropFileInput').addEventListener('change', (e) => this.uploadAirdropFiles(e));
+
+        const uploadArea = document.getElementById('airdropUploadArea');
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault(); uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) this.uploadAirdropFiles({ target: { files: e.dataTransfer.files } });
+        });
+
         document.addEventListener('click', (e) => {
             document.getElementById('engineDropdown').classList.remove('active');
             const sp = document.getElementById('settingsPanel');
@@ -95,6 +116,9 @@ const App = {
             const wp = document.getElementById('wallpaperPanel');
             if (wp.classList.contains('active') && !wp.contains(e.target) && !e.target.closest('#wallpaperFab'))
                 wp.classList.remove('active');
+            const ap = document.getElementById('airdropPanel');
+            if (ap.classList.contains('active') && !ap.contains(e.target) && !e.target.closest('#airdropFab'))
+                ap.classList.remove('active');
             if (!e.target.closest('.search-section')) this.closeSuggestions();
         });
 
@@ -902,6 +926,330 @@ const App = {
         const t = document.getElementById('hitokotoText'), f = document.getElementById('hitokotoFrom');
         try { const r = await fetch('https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k'); const d = await r.json(); t.textContent = d.hitokoto; f.textContent = d.from || ''; t.classList.remove('hitokoto-loading'); }
         catch (e) { t.textContent = '世界上最快乐的事，莫过于为理想而奋斗。'; f.textContent = '苏格拉底'; t.classList.remove('hitokoto-loading'); }
+    },
+
+    // === JSON 格式化 ===
+    initJsonFormatter() {
+        document.getElementById('jsonFormat').addEventListener('click', () => {
+            const input = document.getElementById('jsonInput').value.trim();
+            if (!input) return;
+            try {
+                const obj = JSON.parse(input);
+                document.getElementById('jsonOutput').value = JSON.stringify(obj, null, 2);
+                document.getElementById('jsonStatus').className = 'json-status valid';
+                document.getElementById('jsonStatus').textContent = '✓ 有效的 JSON（' + Object.keys(obj).length + ' 个键）';
+            } catch (e) {
+                document.getElementById('jsonStatus').className = 'json-status invalid';
+                document.getElementById('jsonStatus').textContent = '✗ ' + e.message;
+            }
+        });
+        document.getElementById('jsonMinify').addEventListener('click', () => {
+            const input = document.getElementById('jsonInput').value.trim();
+            if (!input) return;
+            try {
+                document.getElementById('jsonOutput').value = JSON.stringify(JSON.parse(input));
+                document.getElementById('jsonStatus').className = 'json-status valid';
+                document.getElementById('jsonStatus').textContent = '✓ 已压缩';
+            } catch (e) {
+                document.getElementById('jsonStatus').className = 'json-status invalid';
+                document.getElementById('jsonStatus').textContent = '✗ ' + e.message;
+            }
+        });
+        document.getElementById('jsonCopy').addEventListener('click', () => {
+            const v = document.getElementById('jsonOutput').value;
+            if (v) navigator.clipboard.writeText(v);
+        });
+    },
+
+    // === Markdown ===
+    initMarkdown() {
+        document.getElementById('mdInput').addEventListener('input', () => this.renderMarkdown());
+    },
+
+    renderMarkdown() {
+        let text = document.getElementById('mdInput').value;
+        if (!text.trim()) { document.getElementById('mdPreview').innerHTML = '<p class="md-placeholder">预览区域</p>'; return; }
+        text = text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+            .replace(/^---$/gm, '<hr>')
+            .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+            .replace(/^\- (.+)$/gm, '<li>$1</li>')
+            .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+            .replace(/(<li>.*<\/li>\n?)+/g, (m) => '<ul>' + m + '</ul>')
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+            .replace(/\n{2,}/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        document.getElementById('mdPreview').innerHTML = '<p>' + text + '</p>';
+    },
+
+    // === 正则测试 ===
+    initRegex() {
+        const run = () => this.testRegex();
+        document.getElementById('regexPattern').addEventListener('input', run);
+        document.getElementById('regexFlags').addEventListener('input', run);
+        document.getElementById('regexInput').addEventListener('input', run);
+    },
+
+    testRegex() {
+        const pattern = document.getElementById('regexPattern').value;
+        const flags = document.getElementById('regexFlags').value;
+        const text = document.getElementById('regexInput').value;
+        const result = document.getElementById('regexResult');
+        if (!pattern || !text) { result.innerHTML = ''; return; }
+        try {
+            const regex = new RegExp(pattern, flags);
+            const matches = [...text.matchAll(new RegExp(pattern, flags.includes('g') ? flags : flags + 'g'))];
+            if (matches.length === 0) { result.innerHTML = '<span style="opacity:0.4">无匹配</span>'; return; }
+            let html = `<span style="opacity:0.5">找到 ${matches.length} 个匹配:</span><br>`;
+            matches.forEach((m, i) => {
+                const start = m.index, end = start + m[0].length;
+                html += `<span class="regex-match">${m[0]}</span> <span style="opacity:0.3">[${start}:${end}]</span> `;
+            });
+            result.innerHTML = html;
+        } catch (e) {
+            result.innerHTML = '<span style="color:#fca5a5">⚠ ' + e.message + '</span>';
+        }
+    },
+
+    // === 颜色工具 ===
+    initColorTool() {
+        const picker = document.getElementById('colorPicker');
+        picker.addEventListener('input', () => this.updateColor(picker.value));
+        document.getElementById('colorHex').addEventListener('change', (e) => {
+            const v = e.target.value.trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(v)) this.updateColor(v);
+        });
+        document.getElementById('colorCopy').addEventListener('click', () => {
+            const hex = document.getElementById('colorHex').value;
+            navigator.clipboard.writeText(hex);
+        });
+    },
+
+    updateColor(hex) {
+        document.getElementById('colorPicker').value = hex;
+        document.getElementById('colorPreview').style.background = hex;
+        document.getElementById('colorHex').value = hex;
+        const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+        document.getElementById('colorRgb').value = `${r}, ${g}, ${b}`;
+        const rr = r / 255, gg = g / 255, bb = b / 255;
+        const max = Math.max(rr, gg, bb), min = Math.min(rr, gg, bb);
+        let h = 0, s = 0, l = (max + min) / 2;
+        if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            if (max === rr) h = ((gg - bb) / d + (gg < bb ? 6 : 0)) / 6;
+            else if (max === gg) h = ((bb - rr) / d + 2) / 6;
+            else h = ((rr - gg) / d + 4) / 6;
+        }
+        document.getElementById('colorHsl').value = `${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%`;
+    },
+
+    // === 文本对比 ===
+    initDiff() {
+        document.getElementById('diffBtn').addEventListener('click', () => this.runDiff());
+    },
+
+    runDiff() {
+        const a = document.getElementById('diffA').value.split('\n');
+        const b = document.getElementById('diffB').value.split('\n');
+        const result = document.getElementById('diffResult');
+        const maxLen = Math.max(a.length, b.length);
+        let html = '';
+        for (let i = 0; i < maxLen; i++) {
+            const lineA = a[i], lineB = b[i];
+            if (lineA === lineB) {
+                html += `<span class="diff-same">  ${this._esc(lineA || '')}</span>\n`;
+            } else {
+                if (lineA !== undefined) html += `<span class="diff-del">- ${this._esc(lineA)}</span>\n`;
+                if (lineB !== undefined) html += `<span class="diff-add">+ ${this._esc(lineB)}</span>\n`;
+            }
+        }
+        result.innerHTML = html;
+        result.classList.add('active');
+    },
+
+    _esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); },
+
+    // === Lorem Ipsum ===
+    initLorem() {
+        document.getElementById('loremGen').addEventListener('click', () => this.generateLorem());
+        document.getElementById('loremCopy').addEventListener('click', () => {
+            const v = document.getElementById('loremOutput').value;
+            if (v) navigator.clipboard.writeText(v);
+        });
+        this.generateLorem();
+    },
+
+    generateLorem() {
+        const paragraphs = [
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+            'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+            'Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.',
+            'Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula. Donec lobortis risus a elit. Etiam tempor. Ut ullamcorper, ligula ut dictum pharetra, nisi nunc fringilla magna.',
+            'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Ut non enim eleifend felis pretium feugiat. Vivamus quis mi.',
+            'Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero.',
+            'Sed aliquam ultrices mauris. Integer ante arcu, accumsan a, consectetuer eget, posuere ut, mauris. Praesent adipiscing. Phasellus ullamcorper ipsum rutrum nunc.',
+            'Nunc nonummy enim. In hac habitasse platea dictumst. Praesent turpis. Proin sapien ipsum, porta a, auctor quis, euismod ut, mi. Aenean viverra rhoncus pede.',
+            'Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.',
+            'In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus.'
+        ];
+        const count = parseInt(document.getElementById('loremCount').value) || 3;
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            result.push(paragraphs[i % paragraphs.length]);
+        }
+        document.getElementById('loremOutput').value = result.join('\n\n');
+    },
+
+    // === 空投 ===
+    airdropFiles: [],
+    airdropTimer: null,
+
+    toggleAirdrop() {
+        const panel = document.getElementById('airdropPanel');
+        panel.classList.toggle('active');
+        if (panel.classList.contains('active')) {
+            this.refreshAirdrop();
+        }
+    },
+
+    async refreshAirdrop() {
+        try {
+            const res = await fetch('/api/airdrop');
+            this.airdropFiles = await res.json();
+        } catch (e) { this.airdropFiles = []; }
+        this.renderAirdropList();
+        this.startAirdropTimer();
+    },
+
+    startAirdropTimer() {
+        clearInterval(this.airdropTimer);
+        this.airdropTimer = setInterval(() => this.renderAirdropList(), 1000);
+    },
+
+    getAirdropIcon(mime) {
+        if (!mime) return { icon: 'fa-file', cls: 'file' };
+        if (mime.startsWith('image/')) return { icon: 'fa-image', cls: 'image' };
+        if (mime.startsWith('video/')) return { icon: 'fa-video', cls: 'video' };
+        if (mime.startsWith('audio/')) return { icon: 'fa-music', cls: 'audio' };
+        if (mime.includes('zip') || mime.includes('archive') || mime.includes('compressed')) return { icon: 'fa-file-zipper', cls: 'archive' };
+        return { icon: 'fa-file', cls: 'file' };
+    },
+
+    formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    },
+
+    formatRemaining(expiresAt) {
+        const diff = expiresAt - Date.now();
+        if (diff <= 0) return '已过期';
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        if (h > 0) return `${h}h ${m}m`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+    },
+
+    renderAirdropList() {
+        const list = document.getElementById('airdropList');
+        const now = Date.now();
+        const active = this.airdropFiles.filter(f => f.expiresAt > now);
+        const expired = this.airdropFiles.filter(f => f.expiresAt <= now);
+        document.getElementById('airdropCount').textContent = active.length;
+
+        if (this.airdropFiles.length === 0) {
+            list.innerHTML = '<div class="airdrop-empty"><i class="fas fa-cloud-arrow-up"></i>暂无文件，上传一个试试</div>';
+            return;
+        }
+
+        let html = '';
+        for (const f of active) {
+            const { icon, cls } = this.getAirdropIcon(f.mime);
+            const remaining = this.formatRemaining(f.expiresAt);
+            const urgent = (f.expiresAt - now) < 300000;
+            html += `<div class="airdrop-item" data-id="${f.id}">
+                <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
+                <div class="airdrop-item-info">
+                    <div class="airdrop-item-name">${f.name}</div>
+                    <div class="airdrop-item-meta"><span>${this.formatSize(f.size)}</span></div>
+                </div>
+                <div class="airdrop-item-timer ${urgent ? 'urgent' : ''}">${remaining}</div>
+                <div class="airdrop-item-actions">
+                    <a class="adl-download" href="${f.downloadUrl}" download="${f.name}" title="下载"><i class="fas fa-download"></i></a>
+                    <button class="adl-delete" title="删除"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>`;
+        }
+
+        for (const f of expired) {
+            const { icon, cls } = this.getAirdropIcon(f.mime);
+            html += `<div class="airdrop-item" style="opacity:0.35;" data-id="${f.id}">
+                <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
+                <div class="airdrop-item-info">
+                    <div class="airdrop-item-name" style="text-decoration:line-through;">${f.name}</div>
+                    <div class="airdrop-item-meta"><span>已过期</span></div>
+                </div>
+                <div class="airdrop-item-actions" style="opacity:1;">
+                    <button class="adl-delete" title="清除"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>`;
+        }
+
+        list.innerHTML = html;
+
+        list.querySelectorAll('.adl-delete').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const id = btn.closest('.airdrop-item').dataset.id;
+                await fetch('/api/airdrop/' + id, { method: 'DELETE' });
+                this.refreshAirdrop();
+            });
+        });
+    },
+
+    async uploadAirdropFiles(e) {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        const duration = parseInt(document.getElementById('airdropDuration').value);
+        const progress = document.getElementById('airdropProgress');
+        const bar = document.getElementById('airdropProgressBar');
+        const text = document.getElementById('airdropProgressText');
+
+        for (const file of files) {
+            progress.style.display = 'flex';
+            text.textContent = `上传 ${file.name}...`;
+
+            await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (ev) => {
+                    if (ev.lengthComputable) {
+                        text.textContent = `上传 ${file.name} (${Math.round(ev.loaded / ev.total * 100)}%)`;
+                    }
+                });
+                xhr.addEventListener('load', () => resolve());
+                xhr.addEventListener('error', () => reject());
+                xhr.open('POST', '/api/airdrop/upload');
+                xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+                xhr.setRequestHeader('X-File-Mime', file.type || 'application/octet-stream');
+                xhr.setRequestHeader('X-File-Duration', duration);
+                xhr.send(file);
+            });
+        }
+
+        progress.style.display = 'none';
+        e.target.value = '';
+        this.refreshAirdrop();
     }
 };
 

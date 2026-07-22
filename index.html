@@ -261,13 +261,116 @@
                         </div>
                     </div>
                     <div class="ts-actions">
-                        <button class="ts-action-btn" id="tsNowBtn">
-                            <i class="fas fa-crosshairs"></i> 获取当前时间戳
-                        </button>
-                        <button class="ts-action-btn" id="tsCopyBtn">
-                            <i class="fas fa-copy"></i> 复制结果
-                        </button>
+                        <button class="ts-action-btn" id="tsNowBtn"><i class="fas fa-crosshairs"></i> 当前时间戳</button>
+                        <button class="ts-action-btn" id="tsCopyBtn"><i class="fas fa-copy"></i> 复制</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- JSON 格式化 -->
+            <div class="tool-card tool-card-wide" id="tool-json">
+                <div class="tool-header">
+                    <i class="fas fa-brackets-curly fa-solid fa-code"></i>
+                    <span>JSON 格式化</span>
+                </div>
+                <div class="tool-body json-body">
+                    <textarea id="jsonInput" placeholder='粘贴 JSON 数据...&#10;如: {"name":"test","list":[1,2,3]}'></textarea>
+                    <div class="json-actions">
+                        <button class="json-btn primary" id="jsonFormat"><i class="fas fa-indent"></i> 格式化</button>
+                        <button class="json-btn" id="jsonMinify"><i class="fas fa-compress"></i> 压缩</button>
+                        <button class="json-btn" id="jsonCopy"><i class="fas fa-copy"></i> 复制</button>
+                    </div>
+                    <textarea id="jsonOutput" placeholder="结果..." readonly></textarea>
+                    <div class="json-status" id="jsonStatus"></div>
+                </div>
+            </div>
+
+            <!-- Markdown 预览 -->
+            <div class="tool-card tool-card-wide" id="tool-markdown">
+                <div class="tool-header">
+                    <i class="fab fa-markdown"></i>
+                    <span>Markdown 预览</span>
+                </div>
+                <div class="tool-body markdown-body">
+                    <div class="markdown-split">
+                        <textarea id="mdInput" placeholder="输入 Markdown...&#10;&#10;# 标题&#10;**加粗** *斜体*&#10;- 列表项&#10;> 引用&#10;`代码`"></textarea>
+                        <div class="markdown-preview" id="mdPreview"><p class="md-placeholder">预览区域</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 正则测试 -->
+            <div class="tool-card tool-card-wide" id="tool-regex">
+                <div class="tool-header">
+                    <i class="fas fa-asterisk"></i>
+                    <span>正则测试</span>
+                </div>
+                <div class="tool-body regex-body">
+                    <div class="regex-input-row">
+                        <span class="regex-slash">/</span>
+                        <input type="text" id="regexPattern" placeholder="正则表达式">
+                        <span class="regex-slash">/</span>
+                        <input type="text" id="regexFlags" value="g" placeholder="flags" class="regex-flags">
+                    </div>
+                    <textarea id="regexInput" placeholder="输入测试文本..."></textarea>
+                    <div class="regex-result" id="regexResult"></div>
+                </div>
+            </div>
+
+            <!-- 颜色工具 -->
+            <div class="tool-card" id="tool-color">
+                <div class="tool-header">
+                    <i class="fas fa-palette"></i>
+                    <span>颜色工具</span>
+                </div>
+                <div class="tool-body color-body">
+                    <div class="color-preview" id="colorPreview" style="background:#6366f1;"></div>
+                    <input type="color" id="colorPicker" value="#6366f1">
+                    <div class="color-values">
+                        <div class="color-val"><span>HEX</span><input type="text" id="colorHex" value="#6366f1"></div>
+                        <div class="color-val"><span>RGB</span><input type="text" id="colorRgb" value="99, 102, 241" readonly></div>
+                        <div class="color-val"><span>HSL</span><input type="text" id="colorHsl" value="239, 84%, 67%" readonly></div>
+                    </div>
+                    <button class="json-btn" id="colorCopy" style="width:100%;margin-top:8px;"><i class="fas fa-copy"></i> 复制</button>
+                </div>
+            </div>
+
+            <!-- 文本对比 -->
+            <div class="tool-card tool-card-wide" id="tool-diff">
+                <div class="tool-header">
+                    <i class="fas fa-code-compare"></i>
+                    <span>文本对比</span>
+                </div>
+                <div class="tool-body diff-body">
+                    <div class="diff-split">
+                        <div class="diff-pane">
+                            <label>文本 A</label>
+                            <textarea id="diffA" placeholder="原始文本..."></textarea>
+                        </div>
+                        <div class="diff-pane">
+                            <label>文本 B</label>
+                            <textarea id="diffB" placeholder="修改后文本..."></textarea>
+                        </div>
+                    </div>
+                    <button class="json-btn primary" id="diffBtn" style="margin-top:10px;"><i class="fas fa-code-compare"></i> 对比</button>
+                    <div class="diff-result" id="diffResult"></div>
+                </div>
+            </div>
+
+            <!-- Lorem Ipsum -->
+            <div class="tool-card" id="tool-lorem">
+                <div class="tool-header">
+                    <i class="fas fa-paragraph"></i>
+                    <span>Lorem Ipsum</span>
+                </div>
+                <div class="tool-body lorem-body">
+                    <div class="lorem-opts">
+                        <label>段落</label>
+                        <input type="number" id="loremCount" value="3" min="1" max="50">
+                    </div>
+                    <button class="json-btn primary" id="loremGen" style="width:100%;margin-bottom:10px;"><i class="fas fa-shuffle"></i> 生成</button>
+                    <textarea id="loremOutput" readonly></textarea>
+                    <button class="json-btn" id="loremCopy" style="width:100%;margin-top:6px;"><i class="fas fa-copy"></i> 复制</button>
                 </div>
             </div>
         </div>
@@ -276,6 +379,11 @@
         <!-- 壁纸按钮 -->
         <button class="wallpaper-fab" id="wallpaperFab" title="壁纸">
             <i class="fas fa-image"></i>
+        </button>
+
+        <!-- 空投按钮 -->
+        <button class="airdrop-fab" id="airdropFab" title="空投">
+            <i class="fas fa-cloud-arrow-up"></i>
         </button>
 
         <!-- 设置按钮 -->
@@ -624,6 +732,48 @@
         </div>
     </div>
     <input type="file" id="wallpaperFileInput" accept="image/*" style="display: none;">
+
+    <!-- 空投面板 -->
+    <div class="airdrop-panel" id="airdropPanel">
+        <div class="airdrop-header">
+            <div class="airdrop-title">
+                <i class="fas fa-cloud-arrow-up"></i>
+                <h3>空投</h3>
+            </div>
+            <button class="close-btn" id="closeAirdrop">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="airdrop-content">
+            <div class="airdrop-upload-area" id="airdropUploadArea">
+                <input type="file" id="airdropFileInput" multiple style="display:none">
+                <div class="airdrop-upload-icon">
+                    <i class="fas fa-cloud-arrow-up"></i>
+                </div>
+                <div class="airdrop-upload-text">点击或拖拽文件到此处上传</div>
+                <div class="airdrop-upload-hint">文件将在选定时间后自动删除</div>
+                <div class="airdrop-duration-row">
+                    <label>保留时间</label>
+                    <select id="airdropDuration">
+                        <option value="300">5 分钟</option>
+                        <option value="1800">30 分钟</option>
+                        <option value="3600" selected>1 小时</option>
+                        <option value="86400">24 小时</option>
+                        <option value="604800">7 天</option>
+                    </select>
+                </div>
+            </div>
+            <div class="airdrop-progress" id="airdropProgress" style="display:none;">
+                <div class="airdrop-progress-bar" id="airdropProgressBar"></div>
+                <span id="airdropProgressText">上传中...</span>
+            </div>
+            <div class="airdrop-list-header">
+                <span>文件列表</span>
+                <span class="airdrop-count" id="airdropCount">0</span>
+            </div>
+            <div class="airdrop-list" id="airdropList"></div>
+        </div>
+    </div>
 
     <script src="js/storage.js"></script>
     <script src="js/app.js"></script>

@@ -303,6 +303,17 @@
     "todo_list": [],
     "quick_note": "",
     "clipboard_items": [],
-    "dns_map": []
+    "dns_map": [],
+    "airdrop_files": [
+      {
+        "id": "4553b3b57e2012e5",
+        "name": "test.txt",
+        "size": 11,
+        "mime": "text/plain",
+        "path": "/Users/lc/Develop/navigationPage/server/uploads/4553b3b57e2012e5.txt",
+        "createdAt": 1784730531507,
+        "expiresAt": 1784730831507
+      }
+    ]
   }
 }
