@@ -152,7 +152,17 @@ const App = {
         });
 
         document.getElementById('sidebarSettings').addEventListener('click', () => this.toggleSettings());
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => this.toggleSettings());
         document.getElementById('closeSettings').addEventListener('click', () => this.toggleSettings());
+
+        document.querySelectorAll('.settings-nav-item').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.settings-nav-item').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.settings-tab-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelector(`.settings-tab-panel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+            });
+        });
         document.getElementById('addSiteBtn').addEventListener('click', () => this.openNavModal());
         document.getElementById('addNavItem').addEventListener('click', () => this.openNavModal());
         document.getElementById('addCategory').addEventListener('click', () => this.openCategoryModal());

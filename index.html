@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css?v=8">
+    <link rel="stylesheet" href="css/style.css?v=15">
     <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
 </head>
 <body>
@@ -445,89 +445,111 @@
 
     <!-- 设置面板 -->
     <div class="settings-panel" id="settingsPanel">
-        <div class="settings-header">
-            <h3>设置</h3>
-            <button class="close-btn" id="closeSettings">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="settings-content">
-            <!-- 分类管理 -->
-            <div class="settings-section">
-                <h4>分类管理</h4>
-                <div class="category-list" id="categoryList"></div>
-                <button class="add-btn" id="addCategory">
-                    <i class="fas fa-plus"></i> 添加分类
+        <div class="settings-backdrop" id="closeSettings"></div>
+        <div class="settings-modal">
+            <div class="settings-header">
+                <div class="settings-header-left">
+                    <i class="fas fa-gear"></i>
+                    <h3>设置</h3>
+                </div>
+                <button class="close-btn" id="closeSettingsBtn">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-
-            <!-- 导航项管理 -->
-            <div class="settings-section">
-                <h4>导航项管理</h4>
-                <div class="nav-items-list" id="navItemsList"></div>
-                <button class="add-btn" id="addNavItem">
-                    <i class="fas fa-plus"></i> 添加导航项
-                </button>
-            </div>
-
-            <!-- 搜索引擎管理 -->
-            <div class="settings-section">
-                <h4>搜索引擎管理</h4>
-                <div class="engine-list" id="engineList"></div>
-                <button class="add-btn" id="addEngine">
-                    <i class="fas fa-plus"></i> 添加搜索引擎
-                </button>
-            </div>
-
-            <!-- 数据管理 -->
-            <div class="settings-section">
-                <h4>数据管理</h4>
-                <div class="data-actions">
-                    <button class="action-btn" id="exportBtn">
-                        <i class="fas fa-download"></i> 导出配置
+            <div class="settings-body">
+                <div class="settings-nav">
+                    <button class="settings-nav-item active" data-tab="categories" title="分类">
+                        <i class="fas fa-folder"></i>
+                        <span>分类</span>
                     </button>
-                    <button class="action-btn" id="importBtn">
-                        <i class="fas fa-upload"></i> 导入配置
+                    <button class="settings-nav-item" data-tab="sites" title="站点">
+                        <i class="fas fa-globe"></i>
+                        <span>站点</span>
                     </button>
-                    <button class="action-btn danger" id="resetBtn">
-                        <i class="fas fa-trash"></i> 重置
+                    <button class="settings-nav-item" data-tab="engines" title="引擎">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <span>引擎</span>
+                    </button>
+                    <button class="settings-nav-item" data-tab="layout" title="布局">
+                        <i class="fas fa-table-cells"></i>
+                        <span>布局</span>
+                    </button>
+                    <button class="settings-nav-item" data-tab="widgets" title="工具">
+                        <i class="fas fa-puzzle-piece"></i>
+                        <span>工具</span>
+                    </button>
+                    <button class="settings-nav-item" data-tab="dns" title="DNS">
+                        <i class="fas fa-server"></i>
+                        <span>DNS</span>
+                    </button>
+                    <button class="settings-nav-item" data-tab="data" title="数据">
+                        <i class="fas fa-database"></i>
+                        <span>数据</span>
                     </button>
                 </div>
-            </div>
-
-            <!-- 布局位置 -->
-            <div class="settings-section">
-                <h4>布局位置</h4>
-                <div class="position-options">
-                    <button class="position-btn" data-position="top">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>顶部</span>
-                    </button>
-                    <button class="position-btn active" data-position="center">
-                        <i class="fas fa-arrows-alt-v"></i>
-                        <span>居中</span>
-                    </button>
-                    <button class="position-btn" data-position="bottom">
-                        <i class="fas fa-arrow-down"></i>
-                        <span>底部</span>
-                    </button>
+                <div class="settings-content">
+                    <div class="settings-tab-panel active" data-panel="categories">
+                        <div class="settings-section-title">分类管理</div>
+                        <div class="category-list" id="categoryList"></div>
+                        <button class="add-btn" id="addCategory"><i class="fas fa-plus"></i> 添加分类</button>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="sites">
+                        <div class="settings-section-title">站点管理</div>
+                        <div class="nav-items-list" id="navItemsList"></div>
+                        <button class="add-btn" id="addNavItem"><i class="fas fa-plus"></i> 添加导航项</button>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="engines">
+                        <div class="settings-section-title">搜索引擎</div>
+                        <div class="engine-list" id="engineList"></div>
+                        <button class="add-btn" id="addEngine"><i class="fas fa-plus"></i> 添加搜索引擎</button>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="layout">
+                        <div class="settings-section-title">页面布局</div>
+                        <div class="layout-card">
+                            <div class="layout-label">内容位置</div>
+                            <div class="position-options">
+                                <button class="position-btn" data-position="top">
+                                    <i class="fas fa-arrow-up"></i><span>顶部</span>
+                                </button>
+                                <button class="position-btn active" data-position="center">
+                                    <i class="fas fa-arrows-up-down"></i><span>居中</span>
+                                </button>
+                                <button class="position-btn" data-position="bottom">
+                                    <i class="fas fa-arrow-down"></i><span>底部</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="widgets">
+                        <div class="settings-section-title">工具管理</div>
+                        <p class="settings-desc">拖拽排序，开关控制显示</p>
+                        <div class="tools-config-list" id="toolsConfigList"></div>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="dns">
+                        <div class="settings-section-title">DNS 映射</div>
+                        <p class="settings-desc">将自定义域名映射到实际 IP，方便管理局域网设备</p>
+                        <div class="dns-map-list" id="dnsMapList"></div>
+                        <button class="add-btn" id="addDnsMap"><i class="fas fa-plus"></i> 添加映射</button>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="data">
+                        <div class="settings-section-title">数据管理</div>
+                        <p class="settings-desc">导入、导出配置或重置所有数据</p>
+                        <div class="data-grid">
+                            <button class="data-card" id="exportBtn">
+                                <i class="fas fa-download"></i>
+                                <span>导出配置</span>
+                            </button>
+                            <button class="data-card" id="importBtn">
+                                <i class="fas fa-upload"></i>
+                                <span>导入配置</span>
+                            </button>
+                            <button class="data-card danger" id="resetBtn">
+                                <i class="fas fa-trash"></i>
+                                <span>重置数据</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <!-- 小工具设置 -->
-            <div class="settings-section">
-                <h4>小工具</h4>
-                <div class="tools-config-list" id="toolsConfigList"></div>
-            </div>
-
-            <!-- DNS映射 -->
-            <div class="settings-section">
-                <h4>DNS 映射</h4>
-                <p class="settings-desc">将自定义域名映射到实际 IP，方便管理局域网设备</p>
-                <div class="dns-map-list" id="dnsMapList"></div>
-                <button class="add-btn" id="addDnsMap">
-                    <i class="fas fa-plus"></i> 添加映射
-                </button>
             </div>
         </div>
     </div>
@@ -827,6 +849,6 @@
     <div class="tool-overlay" id="toolOverlay"></div>
 
     <script src="js/storage.js?v=3"></script>
-    <script src="js/app.js?v=8"></script>
+    <script src="js/app.js?v=9"></script>
 </body>
 </html>
