@@ -4048,6 +4048,72 @@ form { padding: 22px 24px; }
 
 [data-theme="light"] .hitokoto-section { color: rgba(0, 0, 0, 0.45); }
 
+[data-theme="light"] .tool-card textarea,
+[data-theme="light"] .tool-card input[type="text"],
+[data-theme="light"] .tool-card input[type="url"],
+[data-theme="light"] .tool-card input[type="number"],
+[data-theme="light"] .tool-card select {
+    color: rgba(0, 0, 0, 0.88);
+}
+[data-theme="light"] .tool-card textarea::placeholder,
+[data-theme="light"] .tool-card input::placeholder {
+    color: rgba(0, 0, 0, 0.3);
+}
+[data-theme="light"] .tool-card .pomodoro-display { color: rgba(0, 0, 0, 0.88); }
+[data-theme="light"] .tool-card .pomodoro-mode { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .pomodoro-mode:hover { color: rgba(0, 0, 0, 0.7); }
+[data-theme="light"] .tool-card .todo-text { color: rgba(0, 0, 0, 0.8); }
+[data-theme="light"] .tool-card .todo-text.done { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card .todo-count { color: rgba(0, 0, 0, 0.35); }
+[data-theme="light"] .tool-card .note-item-title { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-card .note-item-preview { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .note-item-time { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card .note-status { color: rgba(0, 0, 0, 0.35); }
+[data-theme="light"] .tool-card .clipboard-item-text { color: rgba(0, 0, 0, 0.8); }
+[data-theme="light"] .tool-card .clipboard-count { color: rgba(0, 0, 0, 0.35); }
+[data-theme="light"] .tool-card .random-display { color: rgba(0, 0, 0, 0.88); }
+[data-theme="light"] .tool-card .counter-num { color: rgba(0, 0, 0, 0.88); }
+[data-theme="light"] .tool-card .counter-label { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .password-display { color: rgba(0, 0, 0, 0.88); background: rgba(0, 0, 0, 0.04); }
+[data-theme="light"] .tool-card .password-opt label { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .pw-toggle { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .ts-now { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .ts-input-group label { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .json-status.valid { color: rgba(0, 0, 0, 0.6); }
+[data-theme="light"] .tool-card .json-status.invalid { color: rgba(220, 38, 38, 0.8); }
+[data-theme="light"] .tool-card .regex-match { color: var(--accent); }
+[data-theme="light"] .tool-card .note-back-btn,
+[data-theme="light"] .tool-card .note-pin-btn,
+[data-theme="light"] .tool-card .note-delete-btn { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .note-pin-btn.pinned { color: var(--accent); }
+[data-theme="light"] .tool-card .note-new-btn { border-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .tool-pinned-card-title { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-card .tool-pinned-card-content { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .tool-pinned-card-empty { color: rgba(0, 0, 0, 0.25); }
+[data-theme="light"] .tool-card .pinned-note-card { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card .pinned-note-card:hover { background: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card .pinned-note-title { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-card .pinned-note-content { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .diff-add { color: rgba(22, 163, 74, 0.9); }
+[data-theme="light"] .tool-card .diff-del { color: rgba(220, 38, 38, 0.9); }
+[data-theme="light"] .tool-card .diff-same { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .note-editor-header { border-bottom-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card .notes-editor-toolbar { border-bottom-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card .notes-title-input { color: rgba(0, 0, 0, 0.88); }
+[data-theme="light"] .tool-card .notes-content-input { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-card .notes-toolbar-actions button { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card .notes-toolbar-actions button:hover { background: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.6); }
+
+[data-theme="light"] .tool-card .airdrop-item-name { color: rgba(0, 0, 0, 0.8); }
+[data-theme="light"] .tool-card .airdrop-item-meta { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .airdrop-item-timer { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .airdrop-item-actions button,
+[data-theme="light"] .tool-card .airdrop-item-actions a { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card .airdrop-item-actions button:hover { background: rgba(0, 0, 0, 0.06); color: rgba(0, 0, 0, 0.7); }
+[data-theme="light"] .tool-card .airdrop-upload-text { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .tool-card .airdrop-upload-hint { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card .airdrop-count { color: rgba(0, 0, 0, 0.35); }
+
 [data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); }
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
 
