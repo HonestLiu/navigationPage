@@ -85,14 +85,16 @@ npm start
 ### Docker
 
 ```bash
-# 构建镜像
-docker build -t navigation-page .
+# 构建镜像（首次或代码更新后加 --no-cache 确保缓存不会导致旧代码残留）
+docker build --no-cache -t navigation-page .
 
 # 运行容器
 docker run -d -p 3000:3000 -v nav-data:/app/server navigation-page
 ```
 
 数据持久化目录：`server/data.json`、`server/uploads`、`server/wallpapers`，建议挂载 volume。
+
+> **注意**：如果宿主机 3000 端口已被占用，可以换其他端口映射，例如 `-p 3001:3000`。服务启动时如果检测到端口被占用会自动尝试下一个端口。
 
 ## 环境变量
 
@@ -154,6 +156,30 @@ navigationPage/
 ├── package.json
 └── README.md
 ```
+
+## 常见问题
+
+### Docker 构建后启动报 `EADDRINUSE` 端口被占用
+
+**原因**：Docker 构建缓存导致容器内运行的是旧代码，端口冲突时无法自动切换。
+
+**解决**：
+
+```bash
+# 清理旧容器
+docker stop $(docker ps -q --filter ancestor=navigation-page) 2>/dev/null
+docker rm $(docker ps -aq --filter ancestor=navigation-page) 2>/dev/null
+
+# 无缓存重建
+docker build --no-cache -t navigation-page .
+
+# 启动时换一个空闲端口
+docker run -d -p 3001:3000 -v nav-data:/app/server navigation-page
+```
+
+### 某些设备上 Docker 启动失败但其他设备正常
+
+通常是 Docker 构建缓存问题。新版本 Dockerfile 已改为显式逐目录复制源码，不再使用 `COPY . .`，可以避免此问题。重新执行 `docker build --no-cache` 即可。
 
 ## License
 
