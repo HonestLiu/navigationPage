@@ -45,12 +45,6 @@ const App = {
         this.initAirdrop();
         this.initHitokoto();
         this.applyToolsVisibility();
-
-        const tc = await Storage.get('tools_collapsed');
-        if (tc !== false) {
-            document.getElementById('toolsSection').classList.add('collapsed');
-            document.getElementById('toolsArrow').classList.add('collapsed');
-        }
     },
 
     handleRemoteChange(type, key, data) {
@@ -143,7 +137,7 @@ const App = {
         document.addEventListener('click', (e) => {
             document.getElementById('engineDropdown').classList.remove('active');
             const sp = document.getElementById('settingsPanel');
-            if (sp.classList.contains('active') && !sp.contains(e.target) && !e.target.closest('#settingsFab'))
+            if (sp.classList.contains('active') && !sp.contains(e.target) && !e.target.closest('#sidebarSettings'))
                 sp.classList.remove('active');
             const wp = document.getElementById('wallpaperPanel');
             if (wp.classList.contains('active') && !wp.contains(e.target) && !e.target.closest('#wallpaperFab'))
@@ -152,9 +146,12 @@ const App = {
             if (ap.classList.contains('active') && !ap.contains(e.target) && !e.target.closest('#airdropFab'))
                 ap.classList.remove('active');
             if (!e.target.closest('.search-section')) this.closeSuggestions();
+
+            const sidebarBtn = e.target.closest('.sidebar-btn[data-view]');
+            if (sidebarBtn) this.switchView(sidebarBtn.dataset.view);
         });
 
-        document.getElementById('settingsFab').addEventListener('click', () => this.toggleSettings());
+        document.getElementById('sidebarSettings').addEventListener('click', () => this.toggleSettings());
         document.getElementById('closeSettings').addEventListener('click', () => this.toggleSettings());
         document.getElementById('addSiteBtn').addEventListener('click', () => this.openNavModal());
         document.getElementById('addNavItem').addEventListener('click', () => this.openNavModal());
@@ -204,8 +201,6 @@ const App = {
 
             if (e.target.id === 'toolOverlay') this.closeOverlay();
         });
-
-        document.getElementById('toolsToggle').addEventListener('click', () => this.toggleTools());
 
         document.getElementById('iconPicker').addEventListener('click', (e) => {
             const option = e.target.closest('.icon-option');
@@ -395,12 +390,12 @@ const App = {
     toggleWallpaperPanel() { const p = document.getElementById('wallpaperPanel'); p.classList.toggle('active'); if (p.classList.contains('active')) { this.updateWallpaperPreview(); this.renderWallpaperHistory(); } },
     closeModal(id) { document.getElementById(id).classList.remove('active'); },
 
-    toggleTools() {
-        const section = document.getElementById('toolsSection');
-        const arrow = document.getElementById('toolsArrow');
-        const collapsed = section.classList.toggle('collapsed');
-        arrow.classList.toggle('collapsed', collapsed);
-        Storage.set('tools_collapsed', collapsed);
+    switchView(view) {
+        document.querySelectorAll('.sidebar-btn[data-view]').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+        document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+        const target = document.getElementById('view-' + view);
+        if (target) target.classList.add('active');
+        if (view === 'notes') this.initNotesView();
     },
 
     // === Tool Expand ===
@@ -1218,102 +1213,136 @@ const App = {
             await Storage.set('quick_notes', this._notes);
             await Storage.set('quick_note', null);
         }
-        this.renderNotesList();
         document.getElementById('noteNewBtn').addEventListener('click', () => this.createNote());
-        document.getElementById('noteBackBtn').addEventListener('click', () => this.showNotesList());
-        document.getElementById('notePinBtn').addEventListener('click', () => this.toggleNotePin());
-        document.getElementById('noteDeleteBtn').addEventListener('click', () => this.deleteNote());
-        document.getElementById('noteTitle').addEventListener('input', () => this.saveCurrentNote());
-        document.getElementById('noteArea').addEventListener('input', () => this.saveCurrentNote());
         this.renderPinnedNotes();
     },
 
-    renderNotesList() {
+    _notesViewInited: false,
+
+    initNotesView() {
+        if (this._notesViewInited) { this.renderNotesViewList(); return; }
+        this._notesViewInited = true;
+        this.renderNotesViewList();
+    },
+
+    renderNotesViewList() {
         const list = document.getElementById('notesList');
+        if (!list) return;
         const pinned = this._notes.filter(n => n.pinned);
         const unpinned = this._notes.filter(n => !n.pinned);
         const sorted = [...pinned, ...unpinned];
 
         if (sorted.length === 0) {
-            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:11px;">暂无笔记</div>';
+            list.innerHTML = '<div class="notes-empty">暂无笔记<br><small>点击 + 新建</small></div>';
             return;
         }
 
         list.innerHTML = sorted.map(n => {
-            const preview = (n.content || '').slice(0, 50).replace(/\n/g, ' ');
-            return `<div class="note-item ${this._currentNoteId === n.id ? 'active' : ''}" data-id="${n.id}">
-                ${n.pinned ? '<i class="fas fa-thumbtack note-item-pin"></i>' : ''}
+            const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
+            const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
+            return `<div class="note-item ${this._currentNoteId == n.id ? 'active' : ''}" data-id="${n.id}">
                 <div class="note-item-info">
                     <div class="note-item-title">${n.title || '无标题'}</div>
-                    <div class="note-item-preview">${preview || '空笔记'}</div>
+                    <div class="note-item-preview">${n.pinned ? '<i class="fas fa-thumbtack" style="color:var(--accent);font-size:9px;margin-right:4px;"></i>' : ''}${preview || '空笔记'}</div>
                 </div>
+                <span class="note-item-time">${time}</span>
             </div>`;
         }).join('');
 
         list.querySelectorAll('.note-item').forEach(item => {
-            item.addEventListener('click', () => this.openNote(item.dataset.id));
+            item.addEventListener('click', () => this.openViewNote(item.dataset.id));
         });
-    },
-
-    showNotesList() {
-        document.getElementById('notesList').style.display = '';
-        document.getElementById('noteEditor').style.display = 'none';
-        this._currentNoteId = null;
-        this.renderNotesList();
     },
 
     createNote() {
         const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
         this._notes.unshift(note);
         this.saveNotes();
-        this.openNote(note.id);
+        this.openViewNote(note.id);
     },
 
-    openNote(id) {
+    openViewNote(id) {
         const note = this._notes.find(n => n.id == id);
         if (!note) return;
         this._currentNoteId = note.id;
-        document.getElementById('notesList').style.display = 'none';
-        document.getElementById('noteEditor').style.display = 'flex';
-        document.getElementById('noteTitle').value = note.title;
-        document.getElementById('noteArea').value = note.content;
-        document.getElementById('notePinBtn').classList.toggle('pinned', note.pinned);
-    },
+        const editorArea = document.getElementById('noteEditor');
+        editorArea.innerHTML = `<div class="notes-editor-inner">
+            <div class="notes-editor-toolbar">
+                <input type="text" class="notes-title-input" id="noteTitle" value="${(note.title || '').replace(/"/g, '&quot;')}" placeholder="标题" autocomplete="off">
+                <div class="notes-toolbar-actions">
+                    <button class="note-pin-btn ${note.pinned ? 'pinned' : ''}" id="notePinBtn" title="固定"><i class="fas fa-thumbtack"></i></button>
+                    <button class="note-delete-btn" id="noteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <textarea class="notes-content-input" id="noteArea" placeholder="开始书写...">${note.content || ''}</textarea>
+        </div>`;
 
-    saveCurrentNote() {
-        if (!this._currentNoteId) return;
-        const note = this._notes.find(n => n.id == this._currentNoteId);
-        if (!note) return;
-        note.title = document.getElementById('noteTitle').value;
-        note.content = document.getElementById('noteArea').value;
-        note.updatedAt = Date.now();
-        this.saveNotes();
-    },
+        const titleInput = document.getElementById('noteTitle');
+        const areaInput = document.getElementById('noteArea');
+        const pinBtn = document.getElementById('notePinBtn');
+        const deleteBtn = document.getElementById('noteDeleteBtn');
 
-    toggleNotePin() {
-        if (!this._currentNoteId) return;
-        const note = this._notes.find(n => n.id == this._currentNoteId);
-        if (!note) return;
-        note.pinned = !note.pinned;
-        note.updatedAt = Date.now();
-        document.getElementById('notePinBtn').classList.toggle('pinned', note.pinned);
-        this.saveNotes();
-        this.renderNotesList();
-        this.renderPinnedNotes();
-    },
+        titleInput.addEventListener('input', () => {
+            note.title = titleInput.value;
+            note.updatedAt = Date.now();
+            this.saveNotes();
+            this.renderNotesViewList();
+        });
+        areaInput.addEventListener('input', () => {
+            note.content = areaInput.value;
+            note.updatedAt = Date.now();
+            this.saveNotes();
+        });
+        pinBtn.addEventListener('click', () => {
+            note.pinned = !note.pinned;
+            note.updatedAt = Date.now();
+            pinBtn.classList.toggle('pinned', note.pinned);
+            this.saveNotes();
+            this.renderNotesViewList();
+            this.renderPinnedNotes();
+        });
+        deleteBtn.addEventListener('click', () => {
+            if (!confirm('删除此笔记？')) return;
+            this._notes = this._notes.filter(n => n.id != note.id);
+            this._currentNoteId = null;
+            this.saveNotes();
+            editorArea.innerHTML = `<div class="notes-editor-empty"><i class="fas fa-pen-to-square"></i><span>选择或新建笔记</span></div>`;
+            this.renderNotesViewList();
+            this.renderPinnedNotes();
+        });
 
-    deleteNote() {
-        if (!this._currentNoteId) return;
-        if (!confirm('删除此笔记？')) return;
-        this._notes = this._notes.filter(n => n.id != this._currentNoteId);
-        this._currentNoteId = null;
-        this.saveNotes();
-        this.showNotesList();
-        this.renderPinnedNotes();
+        document.querySelectorAll('#notesList .note-item').forEach(i => i.classList.toggle('active', i.dataset.id == id));
     },
 
     saveNotes() {
         Storage.set('quick_notes', this._notes);
+    },
+
+    renderPinnedNotes() {
+        const pinned = this._notes.filter(n => n.pinned);
+        let container = document.getElementById('pinnedNotes');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'pinnedNotes';
+            container.className = 'pinned-notes-section';
+            const navSection = document.querySelector('.nav-section');
+            navSection.parentNode.insertBefore(container, navSection);
+        }
+        if (pinned.length === 0) { container.style.display = 'none'; return; }
+        container.style.display = '';
+        container.innerHTML = pinned.map(n => {
+            const content = (n.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            return `<div class="pinned-note-card" data-id="${n.id}">
+                ${n.title ? `<div class="pinned-note-title">${n.title}</div>` : ''}
+                <div class="pinned-note-content">${content || '<span style="opacity:0.3">空笔记</span>'}</div>
+            </div>`;
+        }).join('');
+        container.querySelectorAll('.pinned-note-card').forEach(card => {
+            card.addEventListener('click', () => {
+                this.switchView('notes');
+                setTimeout(() => this.openViewNote(card.dataset.id), 100);
+            });
+        });
     },
 
     renderPinnedNotes() {
