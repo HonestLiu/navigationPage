@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css?v=15">
+    <link rel="stylesheet" href="css/style.css?v=16">
     <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
 </head>
 <body>
@@ -136,17 +136,18 @@
                     <button class="tool-expand-btn" data-tool="notes" title="展开"><i class="fas fa-expand"></i></button>
                 </div>
                 <div class="tool-body note-body">
-                    <div class="notes-list" id="notesList"></div>
-                    <div class="note-editor" id="noteEditor" style="display:none;">
+                    <div class="tool-notes-pinned" id="toolNotesPinned"></div>
+                    <div class="notes-list" id="toolNotesList"></div>
+                    <div class="note-editor" id="toolNoteEditor" style="display:none;">
                         <div class="note-editor-header">
-                            <button class="note-back-btn" id="noteBackBtn"><i class="fas fa-arrow-left"></i></button>
-                            <input type="text" id="noteTitle" placeholder="标题" autocomplete="off">
-                            <button class="note-pin-btn" id="notePinBtn" title="固定到导航页"><i class="fas fa-thumbtack"></i></button>
-                            <button class="note-delete-btn" id="noteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
+                            <button class="note-back-btn" id="toolNoteBackBtn"><i class="fas fa-arrow-left"></i></button>
+                            <input type="text" id="toolNoteTitle" placeholder="标题" autocomplete="off">
+                            <button class="note-pin-btn" id="toolNotePinBtn" title="固定到导航页"><i class="fas fa-thumbtack"></i></button>
+                            <button class="note-delete-btn" id="toolNoteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
                         </div>
-                        <textarea id="noteArea" placeholder="开始书写..."></textarea>
+                        <textarea id="toolNoteArea" placeholder="开始书写..."></textarea>
                     </div>
-                    <button class="note-new-btn" id="noteNewBtn"><i class="fas fa-plus"></i> 新建笔记</button>
+                    <button class="note-new-btn" id="toolNoteNewBtn"><i class="fas fa-plus"></i> 新建笔记</button>
                 </div>
             </div>
 
@@ -412,11 +413,11 @@
                     <div class="notes-sidebar">
                         <div class="notes-sidebar-header">
                             <span>笔记</span>
-                            <button class="notes-new-btn" id="noteNewBtn"><i class="fas fa-plus"></i></button>
+                            <button class="notes-new-btn" id="viewNoteNewBtn"><i class="fas fa-plus"></i></button>
                         </div>
-                        <div class="notes-sidebar-list" id="notesList"></div>
+                        <div class="notes-sidebar-list" id="viewNotesList"></div>
                     </div>
-                    <div class="notes-editor-area" id="noteEditor">
+                    <div class="notes-editor-area" id="viewNoteEditor">
                         <div class="notes-editor-empty">
                             <i class="fas fa-pen-to-square"></i>
                             <span>选择或新建笔记</span>
@@ -848,7 +849,7 @@
     <!-- 工具展开覆盖层 -->
     <div class="tool-overlay" id="toolOverlay"></div>
 
-    <script src="js/storage.js?v=3"></script>
-    <script src="js/app.js?v=9"></script>
+    <script src="js/storage.js?v=4"></script>
+    <script src="js/app.js?v=11"></script>
 </body>
 </html>

@@ -62,7 +62,7 @@ const App = {
             else if (key === 'tools_config') { this.applyToolsVisibility(); this.renderToolsConfig(); }
             else if (key === 'todo_list') { this.todos = data || []; this.renderTodos(); }
             else if (key === 'quick_note') {
-                const noteArea = document.getElementById('noteArea');
+                const noteArea = document.getElementById('toolNoteArea');
                 if (document.activeElement !== noteArea) { noteArea.value = data || ''; }
             }
             else if (key === 'clipboard_items') { this.clipboardItems = data || []; this.renderClipboard(); }
@@ -559,6 +559,8 @@ const App = {
             this.saveNotes();
             this._openOverlayNote(note.id, list, editorArea);
             this.renderOverlayNotesList(list);
+            this.renderToolNotesList();
+            this.renderNotesViewList();
         });
 
         this._overlayNotesList = list;
@@ -629,6 +631,8 @@ const App = {
             note.updatedAt = Date.now();
             this.saveNotes();
             this.renderOverlayNotesList(list);
+            this.renderToolNotesList();
+            this.renderNotesViewList();
         });
         areaInput.addEventListener('input', () => {
             note.content = areaInput.value;
@@ -642,6 +646,8 @@ const App = {
             this.saveNotes();
             this.renderOverlayNotesList(list);
             this.renderPinnedNotes();
+            this.renderToolNotesList();
+            this.renderNotesViewList();
         });
         deleteBtn.addEventListener('click', () => {
             if (!confirm('删除此笔记？')) return;
@@ -651,6 +657,8 @@ const App = {
             editorArea.innerHTML = `<div class="notes-editor-empty"><i class="fas fa-pen-to-square"></i><span>选择或新建笔记</span></div>`;
             this.renderOverlayNotesList(list);
             this.renderPinnedNotes();
+            this.renderToolNotesList();
+            this.renderNotesViewList();
         });
 
         if (list) {
@@ -1212,7 +1220,7 @@ const App = {
         list.querySelectorAll('.todo-delete').forEach(btn => btn.addEventListener('click', () => this.deleteTodo(parseInt(btn.dataset.id))));
     },
 
-    // === Tools: Notes ===
+    // === Tools: Notes (共享数据，快捷笔记 + 笔记视图互通) ===
     _notes: [],
     _currentNoteId: null,
 
@@ -1223,8 +1231,9 @@ const App = {
             await Storage.set('quick_notes', this._notes);
             await Storage.set('quick_note', null);
         }
-        document.getElementById('noteNewBtn').addEventListener('click', () => this.createNote());
+        document.getElementById('toolNoteNewBtn').addEventListener('click', () => this.createToolNote());
         this.renderPinnedNotes();
+        this.renderToolNotesList();
     },
 
     _notesViewInited: false,
@@ -1232,11 +1241,155 @@ const App = {
     initNotesView() {
         if (this._notesViewInited) { this.renderNotesViewList(); return; }
         this._notesViewInited = true;
+        document.getElementById('viewNoteNewBtn').addEventListener('click', () => this.createViewNote());
         this.renderNotesViewList();
     },
 
+    // 快捷笔记 (工具视图) — 有钉住笔记时显示卡片，否则显示列表
+    renderToolNotesList() {
+        const list = document.getElementById('toolNotesList');
+        const pinnedArea = document.getElementById('toolNotesPinned');
+        if (!list || !pinnedArea) return;
+        const pinned = this._notes.filter(n => n.pinned);
+        const unpinned = this._notes.filter(n => !n.pinned);
+
+        // 有钉住笔记 → 显示卡片
+        if (pinned.length > 0) {
+            list.style.display = 'none';
+            pinnedArea.style.display = '';
+            pinnedArea.innerHTML = pinned.map(n => {
+                const content = (n.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                return `<div class="tool-pinned-card" data-id="${n.id}">
+                    <div class="tool-pinned-card-pin"><i class="fas fa-thumbtack"></i></div>
+                    ${n.title ? `<div class="tool-pinned-card-title">${n.title}</div>` : ''}
+                    <div class="tool-pinned-card-content">${content || '<span class="tool-pinned-card-empty">空笔记</span>'}</div>
+                </div>`;
+            }).join('');
+            pinnedArea.querySelectorAll('.tool-pinned-card').forEach(card => {
+                card.addEventListener('click', () => this.openToolNote(card.dataset.id));
+            });
+            return;
+        }
+
+        // 无钉住笔记 → 显示列表
+        pinnedArea.style.display = 'none';
+        list.style.display = '';
+
+        const sorted = [...pinned, ...unpinned];
+
+        if (sorted.length === 0) {
+            list.innerHTML = '<div class="notes-empty">暂无笔记<br><small>点击新建</small></div>';
+            return;
+        }
+
+        list.innerHTML = sorted.map(n => {
+            const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
+            const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
+            return `<div class="note-item" data-id="${n.id}">
+                <div class="note-item-info">
+                    <div class="note-item-title">${n.title || '无标题'}</div>
+                    <div class="note-item-preview">${preview || '空笔记'}</div>
+                </div>
+                <span class="note-item-time">${time}</span>
+            </div>`;
+        }).join('');
+
+        list.querySelectorAll('.note-item').forEach(item => {
+            item.addEventListener('click', () => this.openToolNote(item.dataset.id));
+        });
+    },
+
+    createToolNote() {
+        const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
+        this._notes.unshift(note);
+        this.saveNotes();
+        this.openToolNote(note.id);
+        this.renderNotesViewList();
+        this.renderOverlayNotesList();
+    },
+
+    openToolNote(id) {
+        const note = this._notes.find(n => n.id == id);
+        if (!note) return;
+        this._currentNoteId = note.id;
+
+        const list = document.getElementById('toolNotesList');
+        const editor = document.getElementById('toolNoteEditor');
+        list.style.display = 'none';
+        editor.style.display = '';
+
+        const titleInput = document.getElementById('toolNoteTitle');
+        const areaInput = document.getElementById('toolNoteArea');
+        const pinBtn = document.getElementById('toolNotePinBtn');
+        const deleteBtn = document.getElementById('toolNoteDeleteBtn');
+        const backBtn = document.getElementById('toolNoteBackBtn');
+
+        titleInput.value = note.title || '';
+        areaInput.value = note.content || '';
+        pinBtn.classList.toggle('pinned', note.pinned);
+
+        // Remove old listeners by cloning
+        const newPinBtn = pinBtn.cloneNode(true);
+        pinBtn.parentNode.replaceChild(newPinBtn, pinBtn);
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+        const newBackBtn = backBtn.cloneNode(true);
+        backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+
+        newBackBtn.addEventListener('click', () => {
+            document.getElementById('toolNotesList').style.display = '';
+            document.getElementById('toolNoteEditor').style.display = 'none';
+            this.renderToolNotesList();
+        });
+
+        titleInput.addEventListener('input', () => {
+            note.title = titleInput.value;
+            note.updatedAt = Date.now();
+            this.saveNotes();
+            this.renderNotesViewList();
+        });
+        areaInput.addEventListener('input', () => {
+            note.content = areaInput.value;
+            note.updatedAt = Date.now();
+            this.saveNotes();
+        });
+        newPinBtn.addEventListener('click', () => {
+            note.pinned = !note.pinned;
+            note.updatedAt = Date.now();
+            newPinBtn.classList.toggle('pinned', note.pinned);
+            this.saveNotes();
+            this.renderToolNotesList();
+            this.renderNotesViewList();
+            this.renderPinnedNotes();
+        });
+        newDeleteBtn.addEventListener('click', () => {
+            if (!confirm('删除此笔记？')) return;
+            this._notes = this._notes.filter(n => n.id != note.id);
+            this._currentNoteId = null;
+            this.saveNotes();
+            document.getElementById('toolNotesList').style.display = '';
+            document.getElementById('toolNoteEditor').style.display = 'none';
+            this.renderToolNotesList();
+            this.renderNotesViewList();
+            this.renderPinnedNotes();
+        });
+
+        this.renderToolNotesList();
+    },
+
+    // 笔记视图 (完整编辑器)
+    createViewNote() {
+        const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
+        this._notes.unshift(note);
+        this.saveNotes();
+        this.renderNotesViewList();
+        this.renderToolNotesList();
+        this.renderOverlayNotesList();
+        this.openViewNote(note.id);
+    },
+
     renderNotesViewList() {
-        const list = document.getElementById('notesList');
+        const list = document.getElementById('viewNotesList');
         if (!list) return;
         const pinned = this._notes.filter(n => n.pinned);
         const unpinned = this._notes.filter(n => !n.pinned);
@@ -1264,39 +1417,33 @@ const App = {
         });
     },
 
-    createNote() {
-        const note = { id: Date.now(), title: '', content: '', pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
-        this._notes.unshift(note);
-        this.saveNotes();
-        this.openViewNote(note.id);
-    },
-
     openViewNote(id) {
         const note = this._notes.find(n => n.id == id);
         if (!note) return;
         this._currentNoteId = note.id;
-        const editorArea = document.getElementById('noteEditor');
+        const editorArea = document.getElementById('viewNoteEditor');
         editorArea.innerHTML = `<div class="notes-editor-inner">
             <div class="notes-editor-toolbar">
-                <input type="text" class="notes-title-input" id="noteTitle" value="${(note.title || '').replace(/"/g, '&quot;')}" placeholder="标题" autocomplete="off">
+                <input type="text" class="notes-title-input" id="viewNoteTitle" value="${(note.title || '').replace(/"/g, '&quot;')}" placeholder="标题" autocomplete="off">
                 <div class="notes-toolbar-actions">
-                    <button class="note-pin-btn ${note.pinned ? 'pinned' : ''}" id="notePinBtn" title="固定"><i class="fas fa-thumbtack"></i></button>
-                    <button class="note-delete-btn" id="noteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
+                    <button class="note-pin-btn ${note.pinned ? 'pinned' : ''}" id="viewNotePinBtn" title="固定"><i class="fas fa-thumbtack"></i></button>
+                    <button class="note-delete-btn" id="viewNoteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
-            <textarea class="notes-content-input" id="noteArea" placeholder="开始书写...">${note.content || ''}</textarea>
+            <textarea class="notes-content-input" id="viewNoteArea" placeholder="开始书写...">${note.content || ''}</textarea>
         </div>`;
 
-        const titleInput = document.getElementById('noteTitle');
-        const areaInput = document.getElementById('noteArea');
-        const pinBtn = document.getElementById('notePinBtn');
-        const deleteBtn = document.getElementById('noteDeleteBtn');
+        const titleInput = document.getElementById('viewNoteTitle');
+        const areaInput = document.getElementById('viewNoteArea');
+        const pinBtn = document.getElementById('viewNotePinBtn');
+        const deleteBtn = document.getElementById('viewNoteDeleteBtn');
 
         titleInput.addEventListener('input', () => {
             note.title = titleInput.value;
             note.updatedAt = Date.now();
             this.saveNotes();
             this.renderNotesViewList();
+            this.renderToolNotesList();
         });
         areaInput.addEventListener('input', () => {
             note.content = areaInput.value;
@@ -1309,6 +1456,7 @@ const App = {
             pinBtn.classList.toggle('pinned', note.pinned);
             this.saveNotes();
             this.renderNotesViewList();
+            this.renderToolNotesList();
             this.renderPinnedNotes();
         });
         deleteBtn.addEventListener('click', () => {
@@ -1318,41 +1466,15 @@ const App = {
             this.saveNotes();
             editorArea.innerHTML = `<div class="notes-editor-empty"><i class="fas fa-pen-to-square"></i><span>选择或新建笔记</span></div>`;
             this.renderNotesViewList();
+            this.renderToolNotesList();
             this.renderPinnedNotes();
         });
 
-        document.querySelectorAll('#notesList .note-item').forEach(i => i.classList.toggle('active', i.dataset.id == id));
+        document.querySelectorAll('#viewNotesList .note-item').forEach(i => i.classList.toggle('active', i.dataset.id == id));
     },
 
     saveNotes() {
         Storage.set('quick_notes', this._notes);
-    },
-
-    renderPinnedNotes() {
-        const pinned = this._notes.filter(n => n.pinned);
-        let container = document.getElementById('pinnedNotes');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'pinnedNotes';
-            container.className = 'pinned-notes-section';
-            const navSection = document.querySelector('.nav-section');
-            navSection.parentNode.insertBefore(container, navSection);
-        }
-        if (pinned.length === 0) { container.style.display = 'none'; return; }
-        container.style.display = '';
-        container.innerHTML = pinned.map(n => {
-            const content = (n.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-            return `<div class="pinned-note-card" data-id="${n.id}">
-                ${n.title ? `<div class="pinned-note-title">${n.title}</div>` : ''}
-                <div class="pinned-note-content">${content || '<span style="opacity:0.3">空笔记</span>'}</div>
-            </div>`;
-        }).join('');
-        container.querySelectorAll('.pinned-note-card').forEach(card => {
-            card.addEventListener('click', () => {
-                this.switchView('notes');
-                setTimeout(() => this.openViewNote(card.dataset.id), 100);
-            });
-        });
     },
 
     renderPinnedNotes() {
@@ -1376,10 +1498,8 @@ const App = {
         }).join('');
         container.querySelectorAll('.pinned-note-card').forEach(card => {
             card.addEventListener('click', () => {
-                document.getElementById('toolsSection').classList.remove('collapsed');
-                document.getElementById('toolsArrow').classList.remove('collapsed');
-                Storage.set('tools_collapsed', false);
-                setTimeout(() => this.openNote(card.dataset.id), 100);
+                this.switchView('notes');
+                setTimeout(() => this.openViewNote(card.dataset.id), 100);
             });
         });
     },

@@ -202,7 +202,23 @@ app.get('/api/favicon', (req, res) => {
 
     function tryNext() {
         if (responded) return;
-        if (idx >= sources.length) { responded = true; return res.status(404).json({ error: 'not found' }); }
+        if (idx >= sources.length) {
+            // Final fallback: Google favicons service
+            const fbUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+            const fbReq = https.get(fbUrl, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
+                if (responded) { r.resume(); return; }
+                if (r.statusCode !== 200) { r.resume(); return res.status(404).json({ error: 'not found' }); }
+                const ct = r.headers['content-type'] || '';
+                if (!ct.includes('image') && !ct.includes('icon') && !ct.includes('octet')) { r.resume(); return res.status(404).json({ error: 'not found' }); }
+                responded = true;
+                res.setHeader('Content-Type', ct);
+                res.setHeader('Cache-Control', 'public, max-age=86400');
+                r.pipe(res);
+            });
+            fbReq.on('error', () => { if (!responded) { responded = true; res.status(404).json({ error: 'not found' }); } });
+            fbReq.on('timeout', function () { this.destroy(); if (!responded) { responded = true; res.status(404).json({ error: 'not found' }); } });
+            return;
+        }
         const src = sources[idx++];
         const client = src.startsWith('https') ? https : require('http');
         const reqOpts = { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } };
@@ -211,7 +227,8 @@ app.get('/api/favicon', (req, res) => {
             if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
                 r.resume();
                 const redir = r.headers.location.startsWith('http') ? r.headers.location : new URL(r.headers.location, src).href;
-                client.get(redir, reqOpts, (r2) => handleResponse(r2)).on('error', () => tryNext()).on('timeout', function () { this.destroy(); tryNext(); });
+                const redirectClient = redir.startsWith('https') ? https : require('http');
+                redirectClient.get(redir, reqOpts, (r2) => handleResponse(r2)).on('error', () => tryNext()).on('timeout', function () { this.destroy(); tryNext(); });
                 return;
             }
             handleResponse(r);
