@@ -947,7 +947,7 @@ const App = {
         document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
 
         try {
-            const res = await fetch('/api/favicon?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(8000) });
+            const res = await fetch('/api/favicon?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(15000) });
             if (res.ok) {
                 const blob = await res.blob();
                 const dataUrl = await new Promise((resolve) => {

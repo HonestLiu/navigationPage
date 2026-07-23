@@ -185,78 +185,188 @@ function isPrivateIP(hostname) {
     return false;
 }
 
+function fetchUrl(url, opts) {
+    return new Promise((resolve, reject) => {
+        const client = url.startsWith('https') ? https : require('http');
+        const reqOpts = { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }, ...opts };
+        const req = client.get(url, reqOpts, (r) => {
+            if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+                r.resume();
+                const redir = r.headers.location.startsWith('http') ? r.headers.location : new URL(r.headers.location, url).href;
+                fetchUrl(redir, opts).then(resolve).catch(reject);
+                return;
+            }
+            resolve(r);
+        });
+        req.on('error', reject);
+        req.on('timeout', function () { this.destroy(); reject(new Error('timeout')); });
+    });
+}
+
+function parseIconsFromHTML(html, baseUrl) {
+    const icons = [];
+    // Match <link> tags with rel="icon" (or similar) regardless of attribute order
+    const linkRe = /<link\s[^>]*?rel=["'](?:icon|shortcut icon|apple-touch-icon(?:-precomposed)?)["'][^>]*?>/gi;
+    const linkRe2 = /<link\s[^>]*?href=["'][^"']+["'][^>]*?rel=["'](?:icon|shortcut icon|apple-touch-icon(?:-precomposed)?)["'][^>]*?>/gi;
+    const ogImageRe = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi;
+    const metaIconRe = /<meta[^>]+name=["']msapplication-TileImage["'][^>]+content=["']([^"']+)["']/gi;
+    const seenTags = new Set();
+    let m;
+
+    function extractIcon(tag) {
+        if (seenTags.has(tag)) return;
+        seenTags.add(tag);
+        const hrefMatch = tag.match(/href=["']([^"']+)["']/);
+        if (!hrefMatch) return;
+        let href = hrefMatch[1];
+        if (href.startsWith('//')) href = 'https:' + href;
+        else if (href.startsWith('/')) href = baseUrl + href;
+        else if (!href.startsWith('http')) href = baseUrl + '/' + href;
+        const sizeMatch = tag.match(/sizes=["'](\d+)x\1["']/);
+        const typeMatch = tag.match(/type=["']([^"']+)["']/);
+        const isSvg = (typeMatch && typeMatch[1] === 'image/svg+xml') || href.endsWith('.svg');
+        icons.push({ url: href, size: sizeMatch ? parseInt(sizeMatch[1]) : (isSvg ? -1 : 0) });
+    }
+
+    while ((m = linkRe.exec(html)) !== null) extractIcon(m[0]);
+    while ((m = linkRe2.exec(html)) !== null) extractIcon(m[0]);
+    while ((m = ogImageRe.exec(html)) !== null) {
+        let url = m[1];
+        if (url.startsWith('//')) url = 'https:' + url;
+        else if (url.startsWith('/')) url = baseUrl + url;
+        else if (!url.startsWith('http')) url = baseUrl + '/' + url;
+        icons.push({ url, size: 0 });
+    }
+    while ((m = metaIconRe.exec(html)) !== null) {
+        let url = m[1];
+        if (url.startsWith('//')) url = 'https:' + url;
+        else if (url.startsWith('/')) url = baseUrl + url;
+        else if (!url.startsWith('http')) url = baseUrl + '/' + url;
+        icons.push({ url, size: 144 });
+    }
+    // Prefer PNG/ICO over SVG, larger sizes first
+    icons.sort((a, b) => {
+        if (a.size === -1 && b.size !== -1) return 1;
+        if (a.size !== -1 && b.size === -1) return -1;
+        return b.size - a.size;
+    });
+    return icons;
+}
+
 app.get('/api/favicon', (req, res) => {
     let targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).json({ error: 'missing url' });
     if (!/^https?:\/\//i.test(targetUrl)) targetUrl = 'https://' + targetUrl;
 
-    let hostname;
-    try { hostname = new URL(targetUrl).hostname; } catch (e) { return res.status(400).json({ error: 'invalid url' }); }
+    let hostname, baseUrl;
+    try {
+        const parsed = new URL(targetUrl);
+        hostname = parsed.hostname;
+        baseUrl = parsed.origin;
+    } catch (e) { return res.status(400).json({ error: 'invalid url' }); }
 
     if (isPrivateIP(hostname)) return res.status(403).json({ error: 'private host not allowed' });
 
-    const sources = [];
     const dnsMap = db.kv.dns_map || [];
     let resolvedHost = hostname;
     for (const entry of dnsMap) {
         if (hostname === entry.domain) { resolvedHost = entry.ip; break; }
     }
-    const port = new URL(targetUrl).port;
-    const baseUrl = port ? `http://${resolvedHost}:${port}` : `https://${resolvedHost}`;
-    sources.push(`${baseUrl}/favicon.ico`);
-    if (resolvedHost !== hostname) sources.push(`https://${hostname}/favicon.ico`);
 
-    let idx = 0;
     let responded = false;
 
-    function tryNext() {
-        if (responded) return;
-        if (idx >= sources.length) {
-            // Final fallback: Google favicons service
-            const fbUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
-            const fbReq = https.get(fbUrl, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
-                if (responded) { r.resume(); return; }
-                if (r.statusCode !== 200) { r.resume(); return res.status(404).json({ error: 'not found' }); }
-                const ct = r.headers['content-type'] || '';
-                if (!ct.includes('image') && !ct.includes('icon') && !ct.includes('octet')) { r.resume(); return res.status(404).json({ error: 'not found' }); }
-                responded = true;
-                res.setHeader('Content-Type', ct);
-                res.setHeader('Cache-Control', 'public, max-age=86400');
-                r.pipe(res);
-            });
-            fbReq.on('error', () => { if (!responded) { responded = true; res.status(404).json({ error: 'not found' }); } });
-            fbReq.on('timeout', function () { this.destroy(); if (!responded) { responded = true; res.status(404).json({ error: 'not found' }); } });
-            return;
-        }
-        const src = sources[idx++];
-        const client = src.startsWith('https') ? https : require('http');
-        const reqOpts = { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } };
+    function finish(response, ct) {
+        if (responded) { try { response.resume(); } catch(e) {} return; }
+        responded = true;
+        res.setHeader('Content-Type', ct);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        response.pipe(res);
+    }
 
-        const proxyReq = client.get(src, reqOpts, (r) => {
-            if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
-                r.resume();
-                const redir = r.headers.location.startsWith('http') ? r.headers.location : new URL(r.headers.location, src).href;
-                const redirectClient = redir.startsWith('https') ? https : require('http');
-                redirectClient.get(redir, reqOpts, (r2) => handleResponse(r2)).on('error', () => tryNext()).on('timeout', function () { this.destroy(); tryNext(); });
+    function fail() {
+        if (responded) return;
+        responded = true;
+        res.status(404).json({ error: 'not found' });
+    }
+
+    function tryImageUrl(url) {
+        if (responded) return Promise.resolve();
+        return new Promise((resolve) => {
+            fetchUrl(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } }).then((r) => {
+                if (responded) { r.resume(); resolve(); return; }
+                if (r.statusCode !== 200) { r.resume(); resolve(); return; }
+                const ct = r.headers['content-type'] || '';
+                if (ct.includes('image') || ct.includes('icon') || ct.includes('octet')) {
+                    finish(r, ct);
+                } else { r.resume(); }
+                resolve();
+            }).catch(() => resolve());
+        });
+    }
+
+    // Phase 1: try favicon.ico directly
+    const directBase = resolvedHost !== hostname
+        ? (new URL(targetUrl).port ? `http://${resolvedHost}:${new URL(targetUrl).port}` : `https://${resolvedHost}`)
+        : baseUrl;
+    const faviconIcoUrl = directBase + '/favicon.ico';
+
+    fetchUrl(faviconIcoUrl).then((r) => {
+        if (r.statusCode === 200) {
+            const ct = r.headers['content-type'] || '';
+            if (ct.includes('image') || ct.includes('icon') || ct.includes('octet')) {
+                finish(r, ct);
                 return;
             }
-            handleResponse(r);
-        });
-        proxyReq.on('error', () => tryNext());
-        proxyReq.on('timeout', function () { this.destroy(); tryNext(); });
-
-        function handleResponse(r) {
-            if (responded) { r.resume(); return; }
-            if (r.statusCode !== 200) { r.resume(); return tryNext(); }
-            const ct = r.headers['content-type'] || '';
-            if (!ct.includes('image') && !ct.includes('icon') && !ct.includes('octet')) { r.resume(); return tryNext(); }
-            responded = true;
-            res.setHeader('Content-Type', ct);
-            res.setHeader('Cache-Control', 'public, max-age=86400');
-            r.pipe(res);
         }
+        r.resume();
+
+        // Phase 2: fetch HTML and parse icon links
+        if (responded) return;
+        return fetchUrl(targetUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } });
+    }).then((r) => {
+        if (responded || !r) return;
+        const ct = r.headers['content-type'] || '';
+        if (!ct.includes('text/html')) { r.resume(); return tryExternalServices(); }
+        let body = '';
+        r.on('data', (chunk) => { body += chunk; });
+        r.on('end', () => {
+            if (responded) return;
+            const icons = parseIconsFromHTML(body, baseUrl);
+            if (icons.length === 0) { tryExternalServices(); return; }
+            let chain = Promise.resolve();
+            for (const icon of icons) {
+                chain = chain.then(() => tryImageUrl(icon.url));
+            }
+            chain.then(() => {
+                if (!responded) tryExternalServices();
+            });
+        });
+    }).catch(() => {
+        if (!responded) tryExternalServices();
+    });
+
+    function tryExternalServices() {
+        if (responded) return;
+        const services = [
+            `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`,
+            `https://favicon.im/${hostname}`,
+            `https://api.faviconkit.com/${hostname}/64`,
+        ];
+        let i = 0;
+        function tryService() {
+            if (responded || i >= services.length) { fail(); return; }
+            const url = services[i++];
+            fetchUrl(url).then((r) => {
+                if (responded) { r.resume(); return; }
+                if (r.statusCode !== 200) { r.resume(); tryService(); return; }
+                const ct = r.headers['content-type'] || '';
+                if (ct.includes('image') || ct.includes('icon') || ct.includes('octet')) {
+                    finish(r, ct);
+                } else { r.resume(); tryService(); }
+            }).catch(() => tryService());
+        }
+        tryService();
     }
-    tryNext();
 });
 
 // === Wallpaper Upload ===
