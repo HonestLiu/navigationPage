@@ -482,12 +482,25 @@ app.post('/api/reset', (req, res) => {
 
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'index.html')));
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n  Navigation Page running at:\n`);
-    console.log(`  → Local:   http://localhost:${PORT}`);
-    const nets = require('os').networkInterfaces();
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name]) { if (net.family === 'IPv4' && !net.internal) console.log(`  → Network: http://${net.address}:${PORT}`); }
-    }
-    console.log();
-});
+function startServer(port) {
+    const server = app.listen(port, '0.0.0.0', () => {
+        console.log(`\n  Navigation Page running at:\n`);
+        console.log(`  → Local:   http://localhost:${port}`);
+        const nets = require('os').networkInterfaces();
+        for (const name of Object.keys(nets)) {
+            for (const net of nets[name]) { if (net.family === 'IPv4' && !net.internal) console.log(`  → Network: http://${net.address}:${port}`); }
+        }
+        console.log();
+    });
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`  Port ${port} is in use, trying ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error(err);
+            process.exit(1);
+        }
+    });
+}
+
+startServer(PORT);
