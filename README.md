@@ -85,20 +85,24 @@ npm start
 ### Docker
 
 ```bash
-# 构建镜像（首次或代码更新后加 --no-cache 确保缓存不会导致旧代码残留）
+# 构建镜像
 docker build --no-cache -t navigation-page .
 
-# 运行容器（只挂载数据文件，不要挂载整个 server 目录）
-docker run -d -p 3000:3000 \
-  -v nav-data:/app/server/data.json \
-  -v nav-uploads:/app/server/uploads \
-  -v nav-wallpapers:/app/server/wallpapers \
-  navigation-page
+# 运行容器
+docker run -d -p 3000:3000 navigation-page
 ```
 
-> **注意**：不要用 `-v xxx:/app/server` 挂载整个 `server/` 目录，这会覆盖容器内的 `index.js` 导致启动失败。只需挂载需要持久化的数据文件。
+如需持久化数据（可选）：
 
-> **注意**：如果宿主机 3000 端口已被占用，可以换其他端口映射，例如 `-p 3001:3000`。服务启动时如果检测到端口被占用会自动尝试下一个端口。
+```bash
+# 用 bind mount 挂载宿主机目录（推荐）
+mkdir -p ~/nav-data
+docker run -d -p 3000:3000 -v ~/nav-data:/app/server/data navigation-page
+```
+
+> **注意**：不要挂载整个 `/app/server` 目录（会覆盖 `index.js`），也不要挂载单个文件路径如 `/app/server/data.json`（Docker 会创建目录而非文件）。
+
+> 如果宿主机 3000 端口被占用，换端口映射即可，例如 `-p 3001:3000`。
 
 ## 环境变量
 

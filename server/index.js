@@ -6,9 +6,18 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_PATH = path.join(__dirname, 'data.json');
+let DB_PATH = path.join(__dirname, 'data.json');
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const WALLPAPER_DIR = path.join(__dirname, 'wallpapers');
+
+// Fix: if data.json is a directory (Docker volume mount issue), use fallback path
+try {
+    if (fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).isDirectory()) {
+        DB_PATH = path.join(__dirname, 'data', 'data.json');
+        const dir = path.dirname(DB_PATH);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    }
+} catch (e) {}
 
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 if (!fs.existsSync(WALLPAPER_DIR)) fs.mkdirSync(WALLPAPER_DIR, { recursive: true });
