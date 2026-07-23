@@ -4032,7 +4032,7 @@ form { padding: 22px 24px; }
 [data-theme="light"] .wallpaper-panel h3,
 [data-theme="light"] .airdrop-panel h3 { color: rgba(0, 0, 0, 0.88); }
 
-[data-theme="light"] .tool-overlay { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(20px); }
+[data-theme="light"] .tool-overlay { background: rgba(0, 0, 0, 0.15); backdrop-filter: blur(12px); }
 [data-theme="light"] .tool-card-expanded { background: rgba(255, 255, 255, 0.95); border-color: rgba(0, 0, 0, 0.08); }
 [data-theme="light"] .tool-overlay-header { border-bottom-color: rgba(0, 0, 0, 0.06); }
 
@@ -4104,6 +4104,66 @@ form { padding: 22px 24px; }
 [data-theme="light"] .tool-card .notes-toolbar-actions button { color: rgba(0, 0, 0, 0.3); }
 [data-theme="light"] .tool-card .notes-toolbar-actions button:hover { background: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.6); }
 
+[data-theme="light"] .notes-view { background: rgba(255, 255, 255, 0.6); border-color: rgba(0, 0, 0, 0.06); color: rgba(0, 0, 0, 0.88); }
+[data-theme="light"] .notes-view * { color: inherit; }
+[data-theme="light"] .notes-view .notes-title-input,
+[data-theme="light"] .notes-view .notes-content-input,
+[data-theme="light"] .notes-view .note-item-title,
+[data-theme="light"] .notes-view .notes-sidebar-header,
+[data-theme="light"] .notes-view .note-new-btn,
+[data-theme="light"] .notes-view .note-back-btn,
+[data-theme="light"] .notes-view .note-pin-btn,
+[data-theme="light"] .notes-view .note-delete-btn,
+[data-theme="light"] .notes-view .notes-toolbar-actions button { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .notes-view .note-item-preview,
+[data-theme="light"] .notes-view .note-item-time { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .notes-view .notes-editor-empty { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .notes-view .notes-title-input::placeholder,
+[data-theme="light"] .notes-view .notes-content-input::placeholder { color: rgba(0, 0, 0, 0.25); }
+[data-theme="light"] .notes-view .notes-toolbar-actions .note-pin-btn.pinned { color: #4f5bd5; }
+[data-theme="light"] .notes-view .notes-toolbar-actions .note-delete-btn:hover { color: #dc2626; }
+[data-theme="light"] .notes-view .note-new-btn { background: #4f5bd5; color: #fff !important; border-color: transparent; }
+[data-theme="light"] .notes-view .notes-sidebar { border-right-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .notes-view .notes-sidebar-header { border-bottom-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .notes-view .notes-toolbar-actions button:hover { background: rgba(0, 0, 0, 0.05); }
+[data-theme="light"] .notes-view .note-back-btn,
+[data-theme="light"] .notes-view .note-pin-btn,
+[data-theme="light"] .notes-view .note-delete-btn { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .notes-view .note-back-btn:hover,
+[data-theme="light"] .notes-view .note-pin-btn:hover,
+[data-theme="light"] .notes-view .note-delete-btn:hover { color: rgba(0, 0, 0, 0.7); }
+
+[data-theme="light"] .note-item-title { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .note-item-preview { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .note-item-time { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-pinned-card-title { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-pinned-card-content { color: rgba(0, 0, 0, 0.5); }
+
+[data-theme="light"] .tool-card-expanded .notes-editor-area { background: rgba(255, 255, 255, 0.6); border-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card-expanded .notes-editor-empty { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card-expanded .notes-editor-toolbar { border-bottom-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card-expanded .notes-title-input { color: rgba(0, 0, 0, 0.88); }
+[data-theme="light"] .tool-card-expanded .notes-title-input::placeholder { color: rgba(0, 0, 0, 0.25); }
+[data-theme="light"] .tool-card-expanded .notes-content-input { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-card-expanded .notes-content-input::placeholder { color: rgba(0, 0, 0, 0.2); }
+[data-theme="light"] .tool-card-expanded .notes-toolbar-actions button { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card-expanded .notes-toolbar-actions button:hover { background: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.6); }
+[data-theme="light"] .tool-card-expanded .notes-toolbar-actions .note-pin-btn.pinned { color: #4f5bd5; }
+[data-theme="light"] .tool-card-expanded .notes-toolbar-actions .note-delete-btn:hover { color: #dc2626; background: rgba(220, 38, 38, 0.06); }
+[data-theme="light"] .tool-card-expanded .notes-sidebar { background: rgba(0, 0, 0, 0.02); border-right-color: rgba(0, 0, 0, 0.06); }
+[data-theme="light"] .tool-card-expanded .notes-sidebar-header { border-bottom-color: rgba(0, 0, 0, 0.06); color: rgba(0, 0, 0, 0.7); }
+[data-theme="light"] .tool-card-expanded .notes-sidebar-list .note-item { border-bottom-color: rgba(0, 0, 0, 0.04); }
+[data-theme="light"] .tool-card-expanded .notes-sidebar-list .note-item:hover { background: rgba(0, 0, 0, 0.04); }
+[data-theme="light"] .tool-card-expanded .note-item-title { color: rgba(0, 0, 0, 0.85); }
+[data-theme="light"] .tool-card-expanded .note-item-preview { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card-expanded .note-item-time { color: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .tool-card-expanded .note-back-btn,
+[data-theme="light"] .tool-card-expanded .note-pin-btn,
+[data-theme="light"] .tool-card-expanded .note-delete-btn { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card-expanded .note-new-btn { border-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card-expanded .diff-pane label { color: rgba(0, 0, 0, 0.4); }
+[data-theme="light"] .tool-card-expanded .markdown-preview { background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.06); color: rgba(0, 0, 0, 0.85); }
+
 [data-theme="light"] .tool-card .airdrop-item-name { color: rgba(0, 0, 0, 0.8); }
 [data-theme="light"] .tool-card .airdrop-item-meta { color: rgba(0, 0, 0, 0.4); }
 [data-theme="light"] .tool-card .airdrop-item-timer { color: rgba(0, 0, 0, 0.5); }
@@ -4121,3 +4181,64 @@ form { padding: 22px 24px; }
 [data-theme="light"] body.wallpaper-light { --bg-card: rgba(255, 255, 255, 0.55); --bg-card-hover: rgba(255, 255, 255, 0.7); --bg-input: rgba(255, 255, 255, 0.6); }
 [data-theme="light"] body.wallpaper-light .sidebar { background: rgba(255, 255, 255, 0.85); }
 [data-theme="light"] body.wallpaper-light .settings-modal { background: rgba(255, 255, 255, 0.97); }
+
+/* ============================================================
+   Context Menu
+   ============================================================ */
+.context-menu {
+    position: fixed;
+    z-index: 500;
+    min-width: 180px;
+    background: rgba(22, 24, 38, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-sm);
+    padding: 6px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    display: none;
+    animation: ctxFadeIn 0.15s var(--ease);
+}
+
+.context-menu.active { display: block; }
+
+@keyframes ctxFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: background 0.12s;
+    white-space: nowrap;
+}
+
+.context-menu-item i { font-size: 12px; width: 16px; text-align: center; opacity: 0.7; }
+.context-menu-item:hover { background: rgba(255, 255, 255, 0.08); }
+.context-menu-item.danger { color: var(--red); }
+.context-menu-item.danger:hover { background: rgba(255, 107, 122, 0.12); }
+
+.context-menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 4px 8px;
+}
+
+[data-theme="light"] .context-menu {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] .context-menu-item { color: rgba(0, 0, 0, 0.8); }
+[data-theme="light"] .context-menu-item i { color: rgba(0, 0, 0, 0.5); }
+[data-theme="light"] .context-menu-item:hover { background: rgba(0, 0, 0, 0.05); }
+[data-theme="light"] .context-menu-item.danger { color: #dc2626; }
+[data-theme="light"] .context-menu-item.danger:hover { background: rgba(220, 38, 38, 0.08); }
+[data-theme="light"] .context-menu-divider { background: rgba(0, 0, 0, 0.08); }

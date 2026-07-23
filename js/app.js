@@ -227,6 +227,13 @@ const App = {
             if (expandBtn) this.expandTool(expandBtn.dataset.tool);
 
             if (e.target.id === 'toolOverlay') this.closeOverlay();
+
+            if (!e.target.closest('.context-menu')) this.hideContextMenu();
+        });
+
+        document.getElementById('contextMenu').addEventListener('click', (e) => {
+            const item = e.target.closest('.context-menu-item');
+            if (item) this.handleContextMenuAction(item.dataset.action);
         });
 
         document.getElementById('iconPicker').addEventListener('click', (e) => {
@@ -400,7 +407,38 @@ const App = {
         }).join('');
         grid.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => { e.preventDefault(); window.open(Storage.resolveUrl(item.href), '_blank'); });
+            item.addEventListener('contextmenu', (e) => { e.preventDefault(); this.showContextMenu(e, item.dataset.id); });
         });
+    },
+
+    // === Context Menu ===
+    _contextMenuTargetId: null,
+
+    showContextMenu(e, id) {
+        this._contextMenuTargetId = id;
+        const menu = document.getElementById('contextMenu');
+        menu.classList.add('active');
+        const x = Math.min(e.clientX, window.innerWidth - 200);
+        const y = Math.min(e.clientY, window.innerHeight - 200);
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+    },
+
+    hideContextMenu() {
+        document.getElementById('contextMenu').classList.remove('active');
+        this._contextMenuTargetId = null;
+    },
+
+    handleContextMenuAction(action) {
+        const id = this._contextMenuTargetId;
+        if (!id) return;
+        const item = this.navItems.find(i => i.id == id);
+        this.hideContextMenu();
+        if (!item) return;
+        if (action === 'edit') this.editNavItem(id);
+        else if (action === 'copy') navigator.clipboard.writeText(item.url);
+        else if (action === 'open') window.open(Storage.resolveUrl(item.url), '_blank');
+        else if (action === 'delete') this.deleteNavItem(id);
     },
 
     applyLayoutPosition() {
