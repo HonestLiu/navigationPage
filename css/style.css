@@ -22,6 +22,20 @@ html { background: #0b0e1a; }
     --accent: #7c8aff;
     --accent-dim: rgba(124, 138, 255, 0.12);
     --accent-glow: rgba(124, 138, 255, 0.18);
+    --accent-30: rgba(124, 138, 255, 0.3);
+    --accent-20: rgba(124, 138, 255, 0.2);
+    --accent-15: rgba(124, 138, 255, 0.15);
+    --accent-10: rgba(124, 138, 255, 0.1);
+    --accent-06: rgba(124, 138, 255, 0.06);
+    --accent-04: rgba(124, 138, 255, 0.04);
+    --accent-03: rgba(124, 138, 255, 0.03);
+    --accent-05: rgba(124, 138, 255, 0.05);
+    --accent-08: rgba(124, 138, 255, 0.08);
+    --accent-25: rgba(124, 138, 255, 0.25);
+    --accent-40: rgba(124, 138, 255, 0.4);
+    --accent-50: rgba(124, 138, 255, 0.5);
+    --accent-70: rgba(124, 138, 255, 0.7);
+    --accent-85: rgba(124, 138, 255, 0.85);
     --green: #5ae0a0;
     --red: #ff6b7a;
     --orange: #ffaa5c;
@@ -467,8 +481,8 @@ body {
 }
 
 .search-box:focus-within {
-    border-color: rgba(124, 138, 255, 0.3);
-    box-shadow: 0 0 0 3px rgba(124, 138, 255, 0.06);
+    border-color: var(--accent-30);
+    box-shadow: 0 0 0 3px var(--accent-06);
 }
 
 .search-engine-selector { position: relative; flex-shrink: 0; }
@@ -655,7 +669,7 @@ body {
 .category-tab.active {
     background: var(--accent-dim);
     color: var(--accent);
-    border-color: rgba(124, 138, 255, 0.15);
+    border-color: var(--accent-15);
 }
 
 .edit-btn {
@@ -1113,7 +1127,7 @@ body {
     transition: border-color 0.2s var(--ease);
 }
 
-.todo-input-row input:focus { border-color: rgba(124, 138, 255, 0.3); }
+.todo-input-row input:focus { border-color: var(--accent-30); }
 .todo-input-row input::placeholder { color: var(--text-3); }
 
 .todo-add-btn {
@@ -1662,7 +1676,7 @@ body {
     transition: border-color 0.18s;
 }
 
-.random-range input:focus { border-color: rgba(124, 138, 255, 0.3); }
+.random-range input:focus { border-color: var(--accent-30); }
 
 .random-btn {
     padding: 8px 18px;
@@ -1703,7 +1717,7 @@ body {
     transition: border-color 0.18s;
 }
 
-.counter-body textarea:focus { border-color: rgba(124, 138, 255, 0.3); }
+.counter-body textarea:focus { border-color: var(--accent-30); }
 .counter-body textarea::placeholder { color: var(--text-3); }
 
 .counter-stats { display: flex; gap: 6px; }
@@ -1747,7 +1761,7 @@ body {
     transition: border-color 0.18s;
 }
 
-.base64-body textarea:focus { border-color: rgba(124, 138, 255, 0.3); }
+.base64-body textarea:focus { border-color: var(--accent-30); }
 .base64-body textarea::placeholder { color: var(--text-3); }
 .base64-body textarea[readonly] { background: rgba(255, 255, 255, 0.02); cursor: default; }
 
@@ -1858,7 +1872,7 @@ body {
 
 .pw-toggle:has(input:checked) {
     background: var(--accent-dim);
-    border-color: rgba(124, 138, 255, 0.2);
+    border-color: var(--accent-20);
     color: var(--accent);
 }
 
@@ -1922,7 +1936,7 @@ body {
     transition: border-color 0.18s;
 }
 
-.clipboard-input-row input:focus { border-color: rgba(124, 138, 255, 0.3); }
+.clipboard-input-row input:focus { border-color: var(--accent-30); }
 .clipboard-input-row input::placeholder { color: var(--text-3); }
 
 .clipboard-add-btn {
@@ -2018,7 +2032,7 @@ body {
     transition: border-color 0.18s;
 }
 
-.ts-input-group input:focus { border-color: rgba(124, 138, 255, 0.3); }
+.ts-input-group input:focus { border-color: var(--accent-30); }
 .ts-input-group input::placeholder { color: var(--text-3); }
 
 .ts-btn {
@@ -2038,7 +2052,7 @@ body {
     margin-top: 16px;
 }
 
-.ts-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(124, 138, 255, 0.2); }
+.ts-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-20); }
 
 .ts-actions { display: flex; gap: 6px; }
 
@@ -2111,7 +2125,7 @@ body {
     transition: border-color 0.18s;
 }
 
-.json-body textarea:focus { border-color: rgba(124, 138, 255, 0.3); }
+.json-body textarea:focus { border-color: var(--accent-30); }
 .json-body textarea::placeholder { color: var(--text-3); }
 .json-body textarea[readonly] { background: rgba(255, 255, 255, 0.02); }
 
@@ -2148,7 +2162,7 @@ body {
     outline: none;
 }
 
-.markdown-split textarea:focus { border-color: rgba(124, 138, 255, 0.3); }
+.markdown-split textarea:focus { border-color: var(--accent-30); }
 .markdown-split textarea::placeholder { color: var(--text-3); }
 
 .markdown-preview {
@@ -2225,7 +2239,7 @@ body {
     outline: none;
 }
 
-.regex-body textarea:focus { border-color: rgba(124, 138, 255, 0.3); }
+.regex-body textarea:focus { border-color: var(--accent-30); }
 .regex-body textarea::placeholder { color: var(--text-3); }
 
 .regex-result {
@@ -2316,7 +2330,7 @@ body {
     outline: none;
 }
 
-.diff-pane textarea:focus { border-color: rgba(124, 138, 255, 0.3); }
+.diff-pane textarea:focus { border-color: var(--accent-30); }
 .diff-pane textarea::placeholder { color: var(--text-3); }
 
 .diff-result {
@@ -2365,7 +2379,7 @@ body {
     outline: none;
 }
 
-.lorem-opts input:focus { border-color: rgba(124, 138, 255, 0.3); }
+.lorem-opts input:focus { border-color: var(--accent-30); }
 
 .lorem-body textarea {
     width: 100%;
@@ -2667,7 +2681,7 @@ body {
 [data-theme="light"] .theme-btn { background: rgba(0, 0, 0, 0.03); }
 .theme-btn:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-2); }
 [data-theme="light"] .theme-btn:hover { background: rgba(0, 0, 0, 0.06); }
-.theme-btn.active { background: var(--accent-dim); border-color: rgba(124, 138, 255, 0.2); color: var(--accent); }
+.theme-btn.active { background: var(--accent-dim); border-color: var(--accent-20); color: var(--accent); }
 .theme-btn i { font-size: 16px; opacity: 0.7; }
 
 .position-options {
@@ -2692,7 +2706,7 @@ body {
 }
 
 .position-btn:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-2); }
-.position-btn.active { background: var(--accent-dim); border-color: rgba(124, 138, 255, 0.2); color: var(--accent); }
+.position-btn.active { background: var(--accent-dim); border-color: var(--accent-20); color: var(--accent); }
 .position-btn i { font-size: 16px; opacity: 0.7; }
 
 .data-grid {
@@ -2747,7 +2761,7 @@ body {
 
 .category-row:active, .tool-config-row:active { cursor: grabbing; }
 .category-row.dragging, .tool-config-row.dragging { opacity: 0.4; transform: scale(0.98); }
-.category-row.drag-over, .tool-config-row.drag-over { border-color: rgba(124, 138, 255, 0.3); background: rgba(124, 138, 255, 0.05); }
+.category-row.drag-over, .tool-config-row.drag-over { border-color: var(--accent-30); background: var(--accent-05); }
 
 .drag-handle { color: var(--text-3); font-size: 10px; opacity: 0.4; flex-shrink: 0; cursor: grab; }
 
@@ -2905,7 +2919,7 @@ body {
 }
 
 .icon-option:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-1); }
-.icon-option.selected { background: var(--accent-dim); border-color: rgba(124, 138, 255, 0.4); color: var(--accent); }
+.icon-option.selected { background: var(--accent-dim); border-color: var(--accent-40); color: var(--accent); }
 
 .icon-upload-area {
     display: flex;
@@ -2919,8 +2933,8 @@ body {
     transition: all 0.18s var(--ease);
 }
 
-.icon-upload-area:hover { border-color: var(--accent); background: rgba(124, 138, 255, 0.03); }
-.icon-upload-area.active { border-style: solid; border-color: rgba(124, 138, 255, 0.3); background: var(--accent-dim); }
+.icon-upload-area:hover { border-color: var(--accent); background: var(--accent-03); }
+.icon-upload-area.active { border-style: solid; border-color: var(--accent-30); background: var(--accent-dim); }
 
 .icon-preview {
     width: 38px;
@@ -3025,7 +3039,7 @@ body {
 
 .history-item:hover { transform: scale(1.04); border-color: rgba(255, 255, 255, 0.25); }
 .history-item img { width: 100%; height: 100%; object-fit: cover; }
-.history-item.active { border-color: rgba(124, 138, 255, 0.7); }
+.history-item.active { border-color: var(--accent-70); }
 
 .history-item.active::after {
     content: '\2713';
@@ -3034,7 +3048,7 @@ body {
     right: 5px;
     width: 20px;
     height: 20px;
-    background: rgba(124, 138, 255, 0.85);
+    background: var(--accent-85);
     color: #fff;
     border-radius: 50%;
     display: flex;
@@ -3057,8 +3071,8 @@ body {
     margin-bottom: 12px;
 }
 
-.airdrop-upload-area:hover { border-color: rgba(124, 138, 255, 0.3); background: rgba(124, 138, 255, 0.03); }
-.airdrop-upload-area.dragover { border-color: rgba(124, 138, 255, 0.5); background: rgba(124, 138, 255, 0.06); }
+.airdrop-upload-area:hover { border-color: var(--accent-30); background: var(--accent-03); }
+.airdrop-upload-area.dragover { border-color: var(--accent-50); background: var(--accent-06); }
 
 .airdrop-upload-icon { font-size: 32px; color: var(--text-3); margin-bottom: 10px; }
 .airdrop-upload-text { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 4px; }
@@ -3173,7 +3187,7 @@ body {
     flex-shrink: 0;
 }
 
-.airdrop-item-icon.file { background: rgba(124, 138, 255, 0.1); color: #a5b4fc; }
+.airdrop-item-icon.file { background: var(--accent-10); color: #a5b4fc; }
 .airdrop-item-icon.image { background: rgba(244, 114, 182, 0.1); color: var(--pink); }
 .airdrop-item-icon.video { background: rgba(192, 132, 252, 0.1); color: var(--purple); }
 .airdrop-item-icon.audio { background: rgba(90, 224, 160, 0.1); color: var(--green); }
@@ -3240,7 +3254,7 @@ body {
 }
 
 .airdrop-item-actions .adl-download { background: var(--accent-dim); color: var(--accent); }
-.airdrop-item-actions .adl-download:hover { background: rgba(124, 138, 255, 0.25); }
+.airdrop-item-actions .adl-download:hover { background: var(--accent-25); }
 .airdrop-item-actions .adl-delete:hover { background: rgba(255, 107, 122, 0.12); color: var(--red); }
 
 .airdrop-empty {
@@ -3314,8 +3328,8 @@ form { padding: 22px 24px; }
 
 .form-group input:focus, .form-group select:focus {
     outline: none;
-    border-color: rgba(124, 138, 255, 0.4);
-    box-shadow: 0 0 0 3px rgba(124, 138, 255, 0.08);
+    border-color: var(--accent-40);
+    box-shadow: 0 0 0 3px var(--accent-08);
 }
 
 .form-group input::placeholder { color: var(--text-3); }
@@ -3353,7 +3367,7 @@ form { padding: 22px 24px; }
     flex-shrink: 0;
 }
 
-.url-fetch-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(124, 138, 255, 0.2); }
+.url-fetch-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-20); }
 .url-fetch-btn.loading i { animation: spin 0.8s linear infinite; }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

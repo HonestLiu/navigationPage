@@ -482,10 +482,27 @@ const App = {
 
     applyAccentColor() {
         const c = this.accentColor;
-        const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
-        document.documentElement.style.setProperty('--accent', c);
-        document.documentElement.style.setProperty('--accent-dim', `rgba(${r}, ${g}, ${b}, 0.12)`);
-        document.documentElement.style.setProperty('--accent-glow', `rgba(${r}, ${g}, ${b}, 0.18)`);
+        const [r, g, b] = [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+        const vars = {
+            '--accent': c,
+            '--accent-dim': `rgba(${r},${g},${b},0.12)`,
+            '--accent-glow': `rgba(${r},${g},${b},0.18)`,
+            '--accent-03': `rgba(${r},${g},${b},0.03)`,
+            '--accent-04': `rgba(${r},${g},${b},0.04)`,
+            '--accent-05': `rgba(${r},${g},${b},0.05)`,
+            '--accent-06': `rgba(${r},${g},${b},0.06)`,
+            '--accent-08': `rgba(${r},${g},${b},0.08)`,
+            '--accent-10': `rgba(${r},${g},${b},0.1)`,
+            '--accent-15': `rgba(${r},${g},${b},0.15)`,
+            '--accent-20': `rgba(${r},${g},${b},0.2)`,
+            '--accent-25': `rgba(${r},${g},${b},0.25)`,
+            '--accent-30': `rgba(${r},${g},${b},0.3)`,
+            '--accent-40': `rgba(${r},${g},${b},0.4)`,
+            '--accent-50': `rgba(${r},${g},${b},0.5)`,
+            '--accent-70': `rgba(${r},${g},${b},0.7)`,
+            '--accent-85': `rgba(${r},${g},${b},0.85)`,
+        };
+        for (const [k, v] of Object.entries(vars)) document.documentElement.style.setProperty(k, v);
         document.getElementById('accentColorPicker').value = c;
         this.updateAccentButtons();
     },
