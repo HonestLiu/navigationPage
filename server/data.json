@@ -279,7 +279,7 @@
     }
   ],
   "kv": {
-    "current_category": "开发",
+    "current_category": "Docker",
     "current_engine": "bing",
     "layout_position": "center",
     "tools_collapsed": false,
@@ -353,10 +353,7 @@
       "影音",
       "购物"
     ],
-    "wallpaper": {
-      "url": "/wallpapers/b8b1b3b9270a0ca8.jpeg",
-      "timestamp": 1784735134598
-    },
+    "wallpaper": null,
     "wallpaper_history": [
       {
         "url": "/wallpapers/b8b1b3b9270a0ca8.jpeg",
@@ -400,6 +397,7 @@
         "updatedAt": 1784768201503
       }
     ],
-    "theme_mode": "light"
+    "theme_mode": "light",
+    "theme": "dark"
   }
 }

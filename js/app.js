@@ -5,6 +5,7 @@ const _escHtml = (s) => {
 
 const App = {
     currentCategory: '常用',
+    currentTheme: 'dark',
     currentPosition: 'center',
     selectedIcon: 'fa-solid fa-link',
     navItems: [],
@@ -17,6 +18,7 @@ const App = {
     async init() {
         await Storage.init();
         this.currentCategory = await Storage.get('current_category') || '常用';
+        this.currentTheme = await Storage.get('theme') || 'dark';
         this.currentPosition = await Storage.get('layout_position') || 'center';
         this._cache_category_order = await Storage.get('category_order') || [];
         this._cache_dns = await Storage.get('dns_map') || [];
@@ -26,6 +28,7 @@ const App = {
         Storage.onChange((type, key, data) => this.handleRemoteChange(type, key, data));
 
         this.bindEvents();
+        this.applyTheme();
         this.renderCategoryTabs();
         this.renderNavItems();
         this.renderEngines();
@@ -61,6 +64,7 @@ const App = {
         } else if (type === 'kv') {
             if (key === 'current_category') { this.currentCategory = data; this.renderCategoryTabs(); this.renderNavItems(); }
             else if (key === 'layout_position') { this.currentPosition = data; this.applyLayoutPosition(); }
+            else if (key === 'theme') { this.currentTheme = data; this.applyTheme(); }
             else if (key === 'current_engine') { this.renderEngineDropdown(); }
             else if (key === 'category_order') { this.renderCategoryTabs(); }
             else if (key === 'tools_config') { this.applyToolsVisibility(); this.renderToolsConfig(); }
@@ -206,6 +210,15 @@ const App = {
                 Storage.set('layout_position', this.currentPosition);
                 this.applyLayoutPosition();
                 this.updatePositionButtons();
+            });
+        });
+
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.currentTheme = btn.dataset.theme;
+                Storage.set('theme', this.currentTheme);
+                this.applyTheme();
+                this.updateThemeButtons();
             });
         });
 
@@ -399,6 +412,15 @@ const App = {
 
     updatePositionButtons() {
         document.querySelectorAll('.position-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.position === this.currentPosition));
+    },
+
+    applyTheme() {
+        document.documentElement.setAttribute('data-theme', this.currentTheme);
+        this.updateThemeButtons();
+    },
+
+    updateThemeButtons() {
+        document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === this.currentTheme));
     },
 
     toggleSettings() { document.getElementById('settingsPanel').classList.toggle('active'); if (document.getElementById('settingsPanel').classList.contains('active')) this.renderSettingsLists(); },

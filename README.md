@@ -159,23 +159,28 @@ navigationPage/
 
 ## 常见问题
 
-### Docker 构建后启动报 `EADDRINUSE` 端口被占用
+### Docker 启动报 `EADDRINUSE` 端口被占用
 
-**原因**：Docker 构建缓存导致容器内运行的是旧代码，端口冲突时无法自动切换。
+**原因**：容器重启时旧的 Node 进程还没完全退出，新进程就启动了，端口被旧进程占用。
 
 **解决**：
 
 ```bash
-# 清理旧容器
-docker stop $(docker ps -q --filter ancestor=navigation-page) 2>/dev/null
-docker rm $(docker ps -aq --filter ancestor=navigation-page) 2>/dev/null
+# 方案 1：先停再启（而非 restart）
+docker stop <容器名>
+docker start <容器名>
 
-# 无缓存重建
+# 方案 2：删除重建
+docker rm -f <容器名>
+docker run -d -p 3000:3000 -v nav-data:/app/server navigation-page
+
+# 方案 3：无缓存重建镜像后再启动
 docker build --no-cache -t navigation-page .
-
-# 启动时换一个空闲端口
-docker run -d -p 3001:3000 -v nav-data:/app/server navigation-page
+docker rm -f <容器名>
+docker run -d -p 3000:3000 -v nav-data:/app/server navigation-page
 ```
+
+> 新版本已加入 `SIGTERM` / `SIGINT` 信号处理，`docker restart` 现在可以正常工作。如果仍然遇到此问题，用方案 1 或 2 先停掉旧进程再启动。
 
 ### 某些设备上 Docker 启动失败但其他设备正常
 

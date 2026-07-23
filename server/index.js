@@ -501,6 +501,18 @@ function startServer(port) {
             process.exit(1);
         }
     });
+
+    function shutdown(signal) {
+        console.log(`\n  Received ${signal}, shutting down...`);
+        server.close(() => {
+            console.log('  Server closed.');
+            process.exit(0);
+        });
+        setTimeout(() => process.exit(1), 3000);
+    }
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 startServer(PORT);
