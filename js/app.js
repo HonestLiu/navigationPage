@@ -19,6 +19,7 @@ const App = {
         await Storage.init();
         this.currentCategory = await Storage.get('current_category') || '常用';
         this.currentTheme = await Storage.get('theme') || 'dark';
+        this.accentColor = await Storage.get('accent_color') || '#7c8aff';
         this.currentPosition = await Storage.get('layout_position') || 'center';
         this._cache_category_order = await Storage.get('category_order') || [];
         this._cache_dns = await Storage.get('dns_map') || [];
@@ -29,6 +30,7 @@ const App = {
 
         this.bindEvents();
         this.applyTheme();
+        this.applyAccentColor();
         this.renderCategoryTabs();
         this.renderNavItems();
         this.renderEngines();
@@ -65,6 +67,7 @@ const App = {
             if (key === 'current_category') { this.currentCategory = data; this.renderCategoryTabs(); this.renderNavItems(); }
             else if (key === 'layout_position') { this.currentPosition = data; this.applyLayoutPosition(); }
             else if (key === 'theme') { this.currentTheme = data; this.applyTheme(); }
+            else if (key === 'accent_color') { this.accentColor = data; this.applyAccentColor(); }
             else if (key === 'current_engine') { this.renderEngineDropdown(); }
             else if (key === 'category_order') { this.renderCategoryTabs(); }
             else if (key === 'tools_config') { this.applyToolsVisibility(); this.renderToolsConfig(); }
@@ -220,6 +223,22 @@ const App = {
                 this.applyTheme();
                 this.updateThemeButtons();
             });
+        });
+
+        document.querySelectorAll('.accent-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.accentColor = btn.dataset.color;
+                Storage.set('accent_color', this.accentColor);
+                this.applyAccentColor();
+                this.updateAccentButtons();
+            });
+        });
+
+        document.getElementById('accentColorPicker').addEventListener('input', (e) => {
+            this.accentColor = e.target.value;
+            Storage.set('accent_color', this.accentColor);
+            this.applyAccentColor();
+            this.updateAccentButtons();
         });
 
         document.addEventListener('click', (e) => {
@@ -459,6 +478,21 @@ const App = {
 
     updateThemeButtons() {
         document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === this.currentTheme));
+    },
+
+    applyAccentColor() {
+        const c = this.accentColor;
+        const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+        document.documentElement.style.setProperty('--accent', c);
+        document.documentElement.style.setProperty('--accent-dim', `rgba(${r}, ${g}, ${b}, 0.12)`);
+        document.documentElement.style.setProperty('--accent-glow', `rgba(${r}, ${g}, ${b}, 0.18)`);
+        document.getElementById('accentColorPicker').value = c;
+        this.updateAccentButtons();
+    },
+
+    updateAccentButtons() {
+        const c = this.accentColor.toLowerCase();
+        document.querySelectorAll('.accent-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.color.toLowerCase() === c));
     },
 
     toggleSettings() { document.getElementById('settingsPanel').classList.toggle('active'); if (document.getElementById('settingsPanel').classList.contains('active')) this.renderSettingsLists(); },

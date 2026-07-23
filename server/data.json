@@ -279,7 +279,7 @@
     }
   ],
   "kv": {
-    "current_category": "常用",
+    "current_category": "Docker",
     "current_engine": "bing",
     "layout_position": "center",
     "tools_collapsed": false,
@@ -409,6 +409,7 @@
       }
     ],
     "theme_mode": "light",
-    "theme": "light"
+    "theme": "dark",
+    "accent_color": "#0ea5e9"
   }
 }
