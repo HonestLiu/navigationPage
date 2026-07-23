@@ -82,6 +82,264 @@ body::before {
 
 body.wallpaper-active { background-color: #080a14; }
 body.wallpaper-active::before { opacity: 0.3; }
+
+:not([data-theme="light"]) body.wallpaper-active .nav-item .name {
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .nav-item:hover .name {
+    color: #fff;
+}
+:not([data-theme="light"]) body.wallpaper-active .nav-item .icon {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+:not([data-theme="light"]) body.wallpaper-active .nav-item:hover .icon {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .sidebar-btn {
+    color: rgba(255, 255, 255, 0.65);
+}
+:not([data-theme="light"]) body.wallpaper-active .sidebar-btn:hover {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.1);
+}
+:not([data-theme="light"]) body.wallpaper-active .sidebar-btn.active {
+    color: var(--accent);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .category-tab {
+    color: rgba(255, 255, 255, 0.6);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+:not([data-theme="light"]) body.wallpaper-active .category-tab:hover {
+    color: rgba(255, 255, 255, 0.85);
+}
+:not([data-theme="light"]) body.wallpaper-active .category-tab.active {
+    color: var(--accent);
+}
+:not([data-theme="light"]) body.wallpaper-active .category-tab + .category-tab {
+    border-left-color: rgba(255, 255, 255, 0.12);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .tool-card {
+    background: rgba(16, 18, 30, 0.65);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(16, 18, 30, 0.72);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .pinned-note-card {
+    background: rgba(16, 18, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+:not([data-theme="light"]) body.wallpaper-active .pinned-note-card:hover {
+    background: rgba(16, 18, 30, 0.72);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .tool-pinned-card {
+    background: rgba(16, 18, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-pinned-card:hover {
+    background: rgba(16, 18, 30, 0.72);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .tool-overlay .tool-card-expanded {
+    background: rgba(16, 18, 30, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.92);
+    --text-1: rgba(255, 255, 255, 0.92);
+    --text-2: rgba(255, 255, 255, 0.55);
+    --text-3: rgba(255, 255, 255, 0.3);
+    --bg-card: rgba(255, 255, 255, 0.04);
+    --bg-input: rgba(255, 255, 255, 0.05);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.15);
+    --accent: #7c8aff;
+    --accent-dim: rgba(124, 138, 255, 0.12);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-overlay .tool-card-expanded .tool-overlay-header {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-overlay .tool-card-expanded .tool-overlay-close {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-overlay .tool-card-expanded .tool-overlay-close:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .tool-header {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .hitokoto-text {
+    color: rgba(255, 255, 255, 0.75);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .hitokoto-from {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .search-box input {
+    color: rgba(255, 255, 255, 0.95);
+}
+:not([data-theme="light"]) body.wallpaper-active .search-box input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .settings-nav-item {
+    color: rgba(255, 255, 255, 0.55);
+}
+:not([data-theme="light"]) body.wallpaper-active .settings-nav-item:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+:not([data-theme="light"]) body.wallpaper-active .settings-nav-item.active {
+    color: var(--accent);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .item-name {
+    color: rgba(255, 255, 255, 0.85);
+}
+:not([data-theme="light"]) body.wallpaper-active .category-name {
+    color: rgba(255, 255, 255, 0.8);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-config-name {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .pomodoro-mode {
+    color: rgba(255, 255, 255, 0.55);
+}
+:not([data-theme="light"]) body.wallpaper-active .pomodoro-mode:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .note-item-title {
+    color: rgba(255, 255, 255, 0.85);
+}
+:not([data-theme="light"]) body.wallpaper-active .note-item-preview {
+    color: rgba(255, 255, 255, 0.45);
+}
+:not([data-theme="light"]) body.wallpaper-active .note-item-time {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .todo-text {
+    color: rgba(255, 255, 255, 0.8);
+}
+:not([data-theme="light"]) body.wallpaper-active .todo-text.done {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .airdrop-item-name {
+    color: rgba(255, 255, 255, 0.85);
+}
+:not([data-theme="light"]) body.wallpaper-active .airdrop-item-timer {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body.wallpaper-active textarea,
+body.wallpaper-active input[type="text"],
+body.wallpaper-active input[type="url"],
+body.wallpaper-active input[type="number"] {
+    color: rgba(255, 255, 255, 0.9);
+}
+body.wallpaper-active textarea::placeholder,
+body.wallpaper-active input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .markdown-split textarea,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .diff-pane textarea,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .json-body textarea,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .regex-body textarea,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded #noteArea,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded #noteTitle {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .markdown-preview {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .diff-pane label {
+    color: rgba(255, 255, 255, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-back-btn,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-pin-btn,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-delete-btn {
+    color: rgba(255, 255, 255, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-new-btn {
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-item-title {
+    color: rgba(255, 255, 255, 0.88);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-item-preview,
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-item-time {
+    color: rgba(255, 255, 255, 0.4);
+}
+:not([data-theme="light"]) body.wallpaper-active .tool-card-expanded .note-editor-header {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .notes-editor-area {
+    background: rgba(16, 18, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-editor-empty {
+    color: rgba(255, 255, 255, 0.4);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-editor-toolbar {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-title-input {
+    color: rgba(255, 255, 255, 0.9);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-title-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-toolbar-actions button {
+    color: rgba(255, 255, 255, 0.5);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-toolbar-actions button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.8);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-content-input {
+    color: rgba(255, 255, 255, 0.88);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-content-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+:not([data-theme="light"]) body.wallpaper-active .notes-sidebar {
+    background: rgba(16, 18, 30, 0.5);
+    border-right-color: rgba(255, 255, 255, 0.06);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-sidebar-header {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.7);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-sidebar-list .note-item {
+    border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+:not([data-theme="light"]) body.wallpaper-active .notes-sidebar-list .note-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
 body.wallpaper-active::after {
     content: '';
     position: fixed;
