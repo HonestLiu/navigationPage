@@ -82,6 +82,20 @@ body::before {
 
 body.wallpaper-active { background-color: #080a14; }
 body.wallpaper-active::before { opacity: 0.3; }
+body.wallpaper-active::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    z-index: 0;
+}
+[data-theme="light"] body.wallpaper-active::after {
+    background: rgba(255, 255, 255, 0.3);
+}
+[data-theme="light"] body.wallpaper-light::after {
+    background: rgba(255, 255, 255, 0.35);
+}
 
 /* ============================================================
    Layout
@@ -1141,13 +1155,13 @@ body {
     font-style: italic;
 }
 
-body.wallpaper-light .tool-pinned-card {
+[data-theme="light"] body.wallpaper-light .tool-pinned-card {
     background: rgba(0, 0, 0, 0.03);
     border-color: rgba(0, 0, 0, 0.08);
     border-left-color: var(--accent);
 }
 
-body.wallpaper-light .tool-pinned-card:hover {
+[data-theme="light"] body.wallpaper-light .tool-pinned-card:hover {
     background: rgba(0, 0, 0, 0.05);
 }
 
@@ -3220,7 +3234,7 @@ form { padding: 22px 24px; }
 /* ============================================================
    Light Wallpaper Theme
    ============================================================ */
-body.wallpaper-light {
+[data-theme="light"] body.wallpaper-light {
     --text-1: rgba(0, 0, 0, 0.88);
     --text-2: rgba(0, 0, 0, 0.50);
     --text-3: rgba(0, 0, 0, 0.28);
@@ -3238,112 +3252,112 @@ body.wallpaper-light {
     --purple: #9333ea;
 }
 
-body.wallpaper-light::before {
+[data-theme="light"] body.wallpaper-light::before {
     background:
         radial-gradient(ellipse 700px 500px at 10% 10%, rgba(79, 91, 213, 0.04), transparent),
         radial-gradient(ellipse 600px 500px at 90% 85%, rgba(147, 51, 234, 0.03), transparent);
 }
 
-body.wallpaper-light .nav-item .icon { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
-body.wallpaper-light .nav-item:hover .icon { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
-body.wallpaper-light .item-icon, body.wallpaper-light .tool-config-icon { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+[data-theme="light"] body.wallpaper-light .nav-item .icon { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+[data-theme="light"] body.wallpaper-light .nav-item:hover .icon { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+[data-theme="light"] body.wallpaper-light .item-icon, [data-theme="light"] body.wallpaper-light .tool-config-icon { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
 
-body.wallpaper-light .todo-add-btn,
-body.wallpaper-light .clipboard-add-btn,
-body.wallpaper-light .random-btn,
-body.wallpaper-light .base64-btn:first-child,
-body.wallpaper-light .password-btn:first-child,
-body.wallpaper-light .json-btn.primary,
-body.wallpaper-light .save-btn {
+[data-theme="light"] body.wallpaper-light .todo-add-btn,
+[data-theme="light"] body.wallpaper-light .clipboard-add-btn,
+[data-theme="light"] body.wallpaper-light .random-btn,
+[data-theme="light"] body.wallpaper-light .base64-btn:first-child,
+[data-theme="light"] body.wallpaper-light .password-btn:first-child,
+[data-theme="light"] body.wallpaper-light .json-btn.primary,
+[data-theme="light"] body.wallpaper-light .save-btn {
     background: var(--accent);
     color: #fff;
 }
 
-body.wallpaper-light .toggle-switch { background: rgba(0, 0, 0, 0.12); }
-body.wallpaper-light .toggle-switch.active { background: rgba(22, 163, 74, 0.7); }
+[data-theme="light"] body.wallpaper-light .toggle-switch { background: rgba(0, 0, 0, 0.12); }
+[data-theme="light"] body.wallpaper-light .toggle-switch.active { background: rgba(22, 163, 74, 0.7); }
 
-body.wallpaper-light .modal-content {
+[data-theme="light"] body.wallpaper-light .modal-content {
     background: rgba(255, 255, 255, 0.97);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
 }
 
-body.wallpaper-light .settings-panel,
-body.wallpaper-light .wallpaper-panel,
-body.wallpaper-light .airdrop-panel {
+[data-theme="light"] body.wallpaper-light .settings-panel,
+[data-theme="light"] body.wallpaper-light .wallpaper-panel,
+[data-theme="light"] body.wallpaper-light .airdrop-panel {
     background: transparent;
 }
 
-body.wallpaper-light .settings-modal {
+[data-theme="light"] body.wallpaper-light .settings-modal {
     background: rgba(255, 255, 255, 0.78);
     border-color: rgba(255, 255, 255, 0.25);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
 }
 
-body.wallpaper-light .settings-backdrop {
+[data-theme="light"] body.wallpaper-light .settings-backdrop {
     background: rgba(0, 0, 0, 0.12);
 }
 
-body.wallpaper-light .settings-nav-item:hover { background: rgba(0, 0, 0, 0.04); }
-body.wallpaper-light .settings-nav-item.active { background: var(--accent-dim); }
-body.wallpaper-light .close-btn { border-color: rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.04); }
-body.wallpaper-light .close-btn:hover { background: rgba(0, 0, 0, 0.08); }
+[data-theme="light"] body.wallpaper-light .settings-nav-item:hover { background: rgba(0, 0, 0, 0.04); }
+[data-theme="light"] body.wallpaper-light .settings-nav-item.active { background: var(--accent-dim); }
+[data-theme="light"] body.wallpaper-light .close-btn { border-color: rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.04); }
+[data-theme="light"] body.wallpaper-light .close-btn:hover { background: rgba(0, 0, 0, 0.08); }
 
-body.wallpaper-light .engine-dropdown,
-body.wallpaper-light .search-suggestions {
+[data-theme="light"] body.wallpaper-light .engine-dropdown,
+[data-theme="light"] body.wallpaper-light .search-suggestions {
     background: rgba(255, 255, 255, 0.97);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
-body.wallpaper-light .airdrop-item-actions button,
-body.wallpaper-light .airdrop-item-actions a {
+[data-theme="light"] body.wallpaper-light .airdrop-item-actions button,
+[data-theme="light"] body.wallpaper-light .airdrop-item-actions a {
     background: rgba(0, 0, 0, 0.04);
 }
 
-body.wallpaper-light .airdrop-item-actions .adl-download {
+[data-theme="light"] body.wallpaper-light .airdrop-item-actions .adl-download {
     background: var(--accent-dim);
     color: var(--accent);
 }
 
-body.wallpaper-light .airdrop-item-actions .adl-download:hover { background: rgba(79, 91, 213, 0.18); }
-body.wallpaper-light .airdrop-item-actions .adl-delete:hover { background: rgba(220, 38, 38, 0.1); color: var(--red); }
+[data-theme="light"] body.wallpaper-light .airdrop-item-actions .adl-download:hover { background: rgba(79, 91, 213, 0.18); }
+[data-theme="light"] body.wallpaper-light .airdrop-item-actions .adl-delete:hover { background: rgba(220, 38, 38, 0.1); color: var(--red); }
 
-body.wallpaper-light .wallpaper-fab,
-body.wallpaper-light .airdrop-fab,
-body.wallpaper-light .settings-fab {
+[data-theme="light"] body.wallpaper-light .wallpaper-fab,
+[data-theme="light"] body.wallpaper-light .airdrop-fab,
+[data-theme="light"] body.wallpaper-light .settings-fab {
     background: rgba(255, 255, 255, 0.65);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     color: var(--text-1);
 }
 
-body.wallpaper-light .wallpaper-fab:hover,
-body.wallpaper-light .airdrop-fab:hover,
-body.wallpaper-light .settings-fab:hover {
+[data-theme="light"] body.wallpaper-light .wallpaper-fab:hover,
+[data-theme="light"] body.wallpaper-light .airdrop-fab:hover,
+[data-theme="light"] body.wallpaper-light .settings-fab:hover {
     background: rgba(255, 255, 255, 0.85);
     border-color: rgba(0, 0, 0, 0.12);
 }
 
-body.wallpaper-light .hitokoto-text { color: var(--text-1); text-shadow: none; }
-body.wallpaper-light .hitokoto-from { opacity: 0.6; }
+[data-theme="light"] body.wallpaper-light .hitokoto-text { color: var(--text-1); text-shadow: none; }
+[data-theme="light"] body.wallpaper-light .hitokoto-from { opacity: 0.6; }
 
-body.wallpaper-light .category-tab.active {
+[data-theme="light"] body.wallpaper-light .category-tab.active {
     background: rgba(79, 91, 213, 0.1);
     color: var(--accent);
     border-color: rgba(79, 91, 213, 0.15);
 }
 
-body.wallpaper-light .edit-btn.active {
+[data-theme="light"] body.wallpaper-light .edit-btn.active {
     background: rgba(220, 38, 38, 0.8);
     color: #fff;
 }
 
-body.wallpaper-light .pomodoro-progress-bar {
+[data-theme="light"] body.wallpaper-light .pomodoro-progress-bar {
     background: linear-gradient(90deg, var(--red), var(--purple));
 }
 
-body.wallpaper-light .pomodoro-mode.active {
+[data-theme="light"] body.wallpaper-light .pomodoro-mode.active {
     background: rgba(220, 38, 38, 0.08);
     border-color: rgba(220, 38, 38, 0.2);
     color: var(--red);
@@ -3780,6 +3794,6 @@ body.wallpaper-light .pomodoro-mode.active {
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
 
 /* Wallpaper brightness override for light theme */
-body.wallpaper-light { --bg-card: rgba(255, 255, 255, 0.55); --bg-card-hover: rgba(255, 255, 255, 0.7); --bg-input: rgba(255, 255, 255, 0.6); }
-body.wallpaper-light .sidebar { background: rgba(255, 255, 255, 0.85); }
-body.wallpaper-light .settings-modal { background: rgba(255, 255, 255, 0.97); }
+[data-theme="light"] body.wallpaper-light { --bg-card: rgba(255, 255, 255, 0.55); --bg-card-hover: rgba(255, 255, 255, 0.7); --bg-input: rgba(255, 255, 255, 0.6); }
+[data-theme="light"] body.wallpaper-light .sidebar { background: rgba(255, 255, 255, 0.85); }
+[data-theme="light"] body.wallpaper-light .settings-modal { background: rgba(255, 255, 255, 0.97); }

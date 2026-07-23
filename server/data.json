@@ -279,7 +279,7 @@
     }
   ],
   "kv": {
-    "current_category": "Docker",
+    "current_category": "社交",
     "current_engine": "bing",
     "layout_position": "center",
     "tools_collapsed": false,
@@ -353,7 +353,10 @@
       "影音",
       "购物"
     ],
-    "wallpaper": null,
+    "wallpaper": {
+      "url": "/wallpapers/b8b1b3b9270a0ca8.jpeg",
+      "timestamp": 1784773080492
+    },
     "wallpaper_history": [
       {
         "url": "/wallpapers/b8b1b3b9270a0ca8.jpeg",
