@@ -1,3 +1,8 @@
+const _escHtml = (s) => {
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+};
+
 const App = {
     currentCategory: '常用',
     currentPosition: 'center',
@@ -42,7 +47,6 @@ const App = {
         this.initColorTool();
         this.initDiff();
         this.initLorem();
-        this.initAirdrop();
         this.initHitokoto();
         this.applyToolsVisibility();
     },
@@ -269,9 +273,9 @@ const App = {
             icon.style.cssText = `font-size:20px;color:${currentEngine.color};`;
         }
         dropdown.innerHTML = this.engines.map(engine => `
-            <button class="engine-option ${engine.id === currentId ? 'selected' : ''}" data-id="${engine.id}">
-                <i class="${engine.icon}" style="color: ${engine.color};"></i>
-                <span>${engine.name}</span>
+            <button class="engine-option ${engine.id === currentId ? 'selected' : ''}" data-id="${_escHtml(engine.id)}">
+                <i class="${_escHtml(engine.icon)}" style="color: ${_escHtml(engine.color)};"></i>
+                <span>${_escHtml(engine.name)}</span>
             </button>
         `).join('');
         dropdown.querySelectorAll('.engine-option').forEach(btn => {
@@ -319,8 +323,9 @@ const App = {
         const box = document.getElementById('searchSuggestions');
         this.suggestionIndex = -1;
         box.innerHTML = suggestions.map((s, i) => {
-            const hl = s.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<em>$1</em>');
-            return `<div class="suggestion-item" data-index="${i}" data-query="${s}"><i class="fas fa-magnifying-glass"></i><span class="suggestion-text">${hl}</span><i class="fas fa-arrow-up-left suggestion-arrow"></i></div>`;
+            const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const hl = _escHtml(s).replace(new RegExp('(' + safeQuery + ')', 'gi'), '<em>$1</em>');
+            return `<div class="suggestion-item" data-index="${i}" data-query="${_escHtml(s)}"><i class="fas fa-magnifying-glass"></i><span class="suggestion-text">${hl}</span><i class="fas fa-arrow-up-left suggestion-arrow"></i></div>`;
         }).join('');
         box.classList.add('active');
         box.querySelectorAll('.suggestion-item').forEach(item => {
@@ -360,7 +365,7 @@ const App = {
         const allCats = [...new Set([...order, ...catsFromItems])];
         const categories = allCats.filter(c => order.includes(c)).concat(allCats.filter(c => !order.includes(c)));
 
-        tabs.innerHTML = categories.map(cat => `<button class="category-tab ${cat === this.currentCategory ? 'active' : ''}" data-category="${cat}">${cat}</button>`).join('');
+        tabs.innerHTML = categories.map(cat => `<button class="category-tab ${cat === this.currentCategory ? 'active' : ''}" data-category="${_escHtml(cat)}">${_escHtml(cat)}</button>`).join('');
         tabs.querySelectorAll('.category-tab').forEach(tab => {
             tab.addEventListener('click', async () => {
                 this.currentCategory = tab.dataset.category;
@@ -377,8 +382,8 @@ const App = {
         const items = this.navItems.filter(item => (item.category || '常用') === this.currentCategory);
         grid.innerHTML = items.map(item => {
             const isImg = item.icon && !item.icon.startsWith('fa-');
-            const iconHtml = isImg ? `<img src="${item.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<i class="${item.icon}"></i>`;
-            return `<a href="${item.url}" class="nav-item" data-id="${item.id}"><div class="icon" style="background:${item.color};">${iconHtml}</div><span class="name">${item.name}</span></a>`;
+            const iconHtml = isImg ? `<img src="${_escHtml(item.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<i class="${_escHtml(item.icon)}"></i>`;
+            return `<a href="${_escHtml(item.url)}" class="nav-item" data-id="${item.id}"><div class="icon" style="background:${_escHtml(item.color)};">${iconHtml}</div><span class="name">${_escHtml(item.name)}</span></a>`;
         }).join('');
         grid.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => { e.preventDefault(); window.open(Storage.resolveUrl(item.href), '_blank'); });
@@ -452,26 +457,8 @@ const App = {
         const srcInput = document.getElementById('mdInput');
         input.value = srcInput.value;
         const syncPreview = () => {
-            let text = input.value;
-            if (!text.trim()) { preview.innerHTML = '<p class="md-placeholder">预览区域</p>'; return; }
-            text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-                .replace(/^---$/gm, '<hr>')
-                .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/`([^`]+)`/g, '<code>$1</code>')
-                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-                .replace(/^\- (.+)$/gm, '<li>$1</li>')
-                .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-                .replace(/(<li>.*<\/li>\n?)+/g, (m) => '<ul>' + m + '</ul>')
-                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-                .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
-                .replace(/\n{2,}/g, '</p><p>')
-                .replace(/\n/g, '<br>');
-            preview.innerHTML = '<p>' + text + '</p>';
+            if (!input.value.trim()) { preview.innerHTML = '<p class="md-placeholder">预览区域</p>'; return; }
+            preview.innerHTML = this._renderMarkdownText(input.value);
         };
         input.addEventListener('input', () => {
             srcInput.value = input.value;
@@ -585,11 +572,11 @@ const App = {
         }
 
         list.innerHTML = sorted.map(n => {
-            const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
+            const preview = _escHtml((n.content || '').slice(0, 80).replace(/\n/g, ' '));
             const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
             return `<div class="note-item ${this._currentNoteId == n.id ? 'active' : ''}" data-id="${n.id}">
                 <div class="note-item-info">
-                    <div class="note-item-title">${n.title || '无标题'}</div>
+                    <div class="note-item-title">${_escHtml(n.title) || '无标题'}</div>
                     <div class="note-item-preview">${n.pinned ? '<i class="fas fa-thumbtack" style="color:var(--accent);font-size:9px;margin-right:4px;"></i>' : ''}${preview || '空笔记'}</div>
                 </div>
                 <span class="note-item-time">${time}</span>
@@ -612,7 +599,7 @@ const App = {
 
         editorArea.innerHTML = `<div class="notes-editor-inner">
             <div class="notes-editor-toolbar">
-                <input type="text" class="notes-title-input" id="overlayNoteTitle" value="${(note.title || '').replace(/"/g, '&quot;')}" placeholder="标题" autocomplete="off">
+                <input type="text" class="notes-title-input" id="overlayNoteTitle" value="${_escHtml(note.title)}" placeholder="标题" autocomplete="off">
                 <div class="notes-toolbar-actions">
                     <button class="note-pin-btn ${note.pinned ? 'pinned' : ''}" id="overlayNotePin" title="固定"><i class="fas fa-thumbtack"></i></button>
                     <button class="note-delete-btn" id="overlayNoteDelete" title="删除"><i class="fas fa-trash"></i></button>
@@ -677,7 +664,7 @@ const App = {
 
         categoryList.innerHTML = categories.map(cat => {
             const count = this.navItems.filter(item => (item.category || '常用') === cat).length;
-            return `<div class="category-row" data-category="${cat}"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><div class="category-name">${cat}</div><div class="category-count">${count}</div><div class="item-actions"><button class="edit-item" data-category="${cat}"><i class="fas fa-edit"></i></button><button class="delete-item" data-category="${cat}"><i class="fas fa-trash"></i></button></div></div>`;
+            return `<div class="category-row" data-category="${_escHtml(cat)}"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><div class="category-name">${_escHtml(cat)}</div><div class="category-count">${count}</div><div class="item-actions"><button class="edit-item" data-category="${_escHtml(cat)}"><i class="fas fa-edit"></i></button><button class="delete-item" data-category="${_escHtml(cat)}"><i class="fas fa-trash"></i></button></div></div>`;
         }).join('');
         categoryList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.editCategory(btn.dataset.category)));
         categoryList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => this.deleteCategory(btn.dataset.category)));
@@ -706,14 +693,14 @@ const App = {
         const navList = document.getElementById('navItemsList');
         navList.innerHTML = this.navItems.map(item => {
             const isImg = item.icon && !item.icon.startsWith('fa-');
-            const iconHtml = isImg ? `<img src="${item.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<i class="${item.icon}"></i>`;
-            return `<div class="nav-item-row" data-id="${item.id}"><div class="item-icon" style="background:${item.color};">${iconHtml}</div><div class="item-info"><div class="item-name">${item.name}</div><div class="item-url">${item.category||'常用'} · ${item.url}</div></div><div class="item-actions"><button class="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i></button></div></div>`;
+            const iconHtml = isImg ? `<img src="${_escHtml(item.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : `<i class="${_escHtml(item.icon)}"></i>`;
+            return `<div class="nav-item-row" data-id="${item.id}"><div class="item-icon" style="background:${_escHtml(item.color)};">${iconHtml}</div><div class="item-info"><div class="item-name">${_escHtml(item.name)}</div><div class="item-url">${_escHtml(item.category||'常用')} · ${_escHtml(item.url)}</div></div><div class="item-actions"><button class="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i></button></div></div>`;
         }).join('');
         navList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.editNavItem(btn.dataset.id)));
         navList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => this.deleteNavItem(btn.dataset.id)));
 
         const engineList = document.getElementById('engineList');
-        engineList.innerHTML = this.engines.map(engine => `<div class="engine-row" data-id="${engine.id}"><div class="item-icon" style="background:${engine.color};"><i class="${engine.icon}"></i></div><div class="item-info"><div class="item-name">${engine.name}</div><div class="item-url">${engine.url}</div></div><div class="item-actions"><button class="edit-item" data-id="${engine.id}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${engine.id}"><i class="fas fa-trash"></i></button></div></div>`).join('');
+        engineList.innerHTML = this.engines.map(engine => `<div class="engine-row" data-id="${_escHtml(engine.id)}"><div class="item-icon" style="background:${_escHtml(engine.color)};"><i class="${_escHtml(engine.icon)}"></i></div><div class="item-info"><div class="item-name">${_escHtml(engine.name)}</div><div class="item-url">${_escHtml(engine.url)}</div></div><div class="item-actions"><button class="edit-item" data-id="${_escHtml(engine.id)}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${_escHtml(engine.id)}"><i class="fas fa-trash"></i></button></div></div>`).join('');
         engineList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.editEngine(btn.dataset.id)));
         engineList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => this.deleteEngine(btn.dataset.id)));
 
@@ -724,7 +711,7 @@ const App = {
     async renderToolsConfig() {
         const list = document.getElementById('toolsConfigList');
         const config = await Storage.get('tools_config') || [];
-        list.innerHTML = config.map(tool => `<div class="tool-config-row" draggable="true" data-id="${tool.id}"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><div class="tool-config-icon"><i class="${tool.icon}"></i></div><span class="tool-config-name">${tool.name}</span><button class="toggle-switch ${tool.enabled?'active':''}" data-id="${tool.id}"></button></div>`).join('');
+        list.innerHTML = config.map(tool => `<div class="tool-config-row" draggable="true" data-id="${_escHtml(tool.id)}"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><div class="tool-config-icon"><i class="${_escHtml(tool.icon)}"></i></div><span class="tool-config-name">${_escHtml(tool.name)}</span><button class="toggle-switch ${tool.enabled?'active':''}" data-id="${_escHtml(tool.id)}"></button></div>`).join('');
         list.querySelectorAll('.toggle-switch').forEach(btn => btn.addEventListener('click', async () => {
             const cfg = await Storage.get('tools_config') || [];
             const t = cfg.find(x => x.id === btn.dataset.id);
@@ -766,7 +753,7 @@ const App = {
         const order = this._cache_category_order || [];
         const catsFromItems = [...new Set(this.navItems.map(i => i.category || '常用'))];
         const cats = [...new Set([...order, ...catsFromItems])];
-        sel.innerHTML = '<option value="" disabled' + (!item ? ' selected' : '') + '>请选择分类</option>' + cats.map(c => `<option value="${c}" ${item && item.category === c ? 'selected' : ''}>${c}</option>`).join('');
+        sel.innerHTML = '<option value="" disabled' + (!item ? ' selected' : '') + '>请选择分类</option>' + cats.map(c => `<option value="${_escHtml(c)}" ${item && item.category === c ? 'selected' : ''}>${_escHtml(c)}</option>`).join('');
         if (item) sel.value = item.category;
         this.selectedIcon = item ? item.icon : 'fa-solid fa-link';
         const area = document.getElementById('iconUploadArea');
@@ -916,7 +903,7 @@ const App = {
         this._cache_dns = await Storage.get('dns_map') || [];
         const list = document.getElementById('dnsMapList');
         if (this._cache_dns.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:12px;opacity:0.4;">暂无映射</div>'; return; }
-        list.innerHTML = this._cache_dns.map((m, i) => `<div class="dns-map-row" data-index="${i}"><div class="dns-map-icon"><i class="fas fa-server"></i></div><div class="dns-map-info"><div><span class="dns-map-domain">${m.domain}</span><span class="dns-map-arrow"><i class="fas fa-arrow-right"></i></span><span class="dns-map-ip">${m.ip}</span></div>${m.note ? `<div class="dns-map-note">${m.note}</div>` : ''}</div><div class="item-actions"><button class="edit-item" data-index="${i}"><i class="fas fa-edit"></i></button><button class="delete-item" data-index="${i}"><i class="fas fa-trash"></i></button></div></div>`).join('');
+        list.innerHTML = this._cache_dns.map((m, i) => `<div class="dns-map-row" data-index="${i}"><div class="dns-map-icon"><i class="fas fa-server"></i></div><div class="dns-map-info"><div><span class="dns-map-domain">${_escHtml(m.domain)}</span><span class="dns-map-arrow"><i class="fas fa-arrow-right"></i></span><span class="dns-map-ip">${_escHtml(m.ip)}</span></div>${m.note ? `<div class="dns-map-note">${_escHtml(m.note)}</div>` : ''}</div><div class="item-actions"><button class="edit-item" data-index="${i}"><i class="fas fa-edit"></i></button><button class="delete-item" data-index="${i}"><i class="fas fa-trash"></i></button></div></div>`).join('');
         list.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => this.openDnsModal(parseInt(btn.dataset.index))));
         list.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', async () => { if (!confirm('删除？')) return; this._cache_dns.splice(parseInt(btn.dataset.index), 1); await Storage.set('dns_map', this._cache_dns); this.renderDnsMap(); }));
     },
@@ -1016,9 +1003,12 @@ const App = {
         reader.readAsText(file); e.target.value = '';
     },
 
-    resetData() {
-        if (!confirm('确定重置？')) return;
-        location.reload();
+    async resetData() {
+        if (!confirm('确定重置？这将清除所有自定义数据。')) return;
+        try {
+            await fetch('/api/reset', { method: 'POST' });
+            location.reload();
+        } catch (e) { alert('重置失败'); }
     },
 
     // === Wallpaper ===
@@ -1064,26 +1054,8 @@ const App = {
         preview.src = (wp && wp.url) ? wp.url : "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect fill="%23667eea" width="400" height="200"/><text fill="white" font-family="Arial" font-size="20" text-anchor="middle" x="200" y="105">默认背景</text></svg>');
     },
 
-    async fetchBingWallpaper() {
+    async _fetchBingWallpaper(idx) {
         try {
-            const res = await fetch('https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN');
-            const data = await res.json();
-            const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
-            document.body.style.backgroundImage = `url(${url})`;
-            document.body.classList.add('wallpaper-active');
-            this._detectWallpaperBrightness(url);
-            await Storage.set('wallpaper', { url, timestamp: Date.now() });
-            const hist = await Storage.get('wallpaper_history') || [];
-            hist.unshift({ url, name: data.images[0].copyright });
-            if (hist.length > 12) hist.pop();
-            await Storage.set('wallpaper_history', hist);
-            this.updateWallpaperPreview(); this.renderWallpaperHistory();
-        } catch (e) { alert('获取壁纸失败'); }
-    },
-
-    async fetchRandomBingWallpaper() {
-        try {
-            const idx = Math.floor(Math.random() * 8);
             const res = await fetch(`https://cn.bing.com/HPImageArchive.aspx?format=js&idx=${idx}&n=1&mkt=zh-CN`);
             const data = await res.json();
             const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
@@ -1098,6 +1070,9 @@ const App = {
             this.updateWallpaperPreview(); this.renderWallpaperHistory();
         } catch (e) { alert('获取壁纸失败'); }
     },
+
+    async fetchBingWallpaper() { await this._fetchBingWallpaper(0); },
+    async fetchRandomBingWallpaper() { await this._fetchBingWallpaper(Math.floor(Math.random() * 8)); },
 
     async uploadWallpaper(e) {
         const file = e.target.files[0]; if (!file) return;
@@ -1147,7 +1122,7 @@ const App = {
         const grid = document.querySelector('.history-grid');
         if (hist.length === 0) { document.getElementById('wallpaperHistory').style.display = 'none'; return; }
         document.getElementById('wallpaperHistory').style.display = 'block';
-        grid.innerHTML = hist.map(item => `<div class="history-item ${cur && cur.url === item.url ? 'active' : ''}" data-url="${item.url}"><img src="${item.url}" alt="${item.name || ''}"></div>`).join('');
+        grid.innerHTML = hist.map(item => `<div class="history-item ${cur && cur.url === item.url ? 'active' : ''}" data-url="${_escHtml(item.url)}"><img src="${_escHtml(item.url)}" alt="${_escHtml(item.name || '')}"></div>`).join('');
         grid.querySelectorAll('.history-item').forEach(item => item.addEventListener('click', async () => {
             document.body.style.backgroundImage = `url(${item.dataset.url})`;
             document.body.classList.add('wallpaper-active');
@@ -1185,12 +1160,12 @@ const App = {
         if (this.pomodoroRunning) return; this.pomodoroRunning = true;
         document.getElementById('pomodoroStart').style.display = 'none';
         document.getElementById('pomodoroPause').style.display = 'flex';
-        this.pomodoroInterval = setInterval(() => {
+        this.pomodoroInterval = this._addInterval(() => {
             this.pomodoroTime--; this.updatePomodoroDisplay();
             if (this.pomodoroTime <= 0) { this.pausePomodoro(); if (Notification.permission === 'granted') new Notification('番茄钟', { body: '时间到！' }); }
         }, 1000);
     },
-    pausePomodoro() { this.pomodoroRunning = false; clearInterval(this.pomodoroInterval); document.getElementById('pomodoroStart').style.display = 'flex'; document.getElementById('pomodoroPause').style.display = 'none'; },
+    pausePomodoro() { this.pomodoroRunning = false; clearInterval(this.pomodoroInterval); this._intervals = this._intervals.filter(id => id !== this.pomodoroInterval); document.getElementById('pomodoroStart').style.display = 'flex'; document.getElementById('pomodoroPause').style.display = 'none'; },
     resetPomodoro() { this.pausePomodoro(); this.pomodoroTime = this.pomodoroTotal; this.updatePomodoroDisplay(); },
     updatePomodoroDisplay() {
         document.getElementById('pomodoroDisplay').textContent = `${String(Math.floor(this.pomodoroTime/60)).padStart(2,'0')}:${String(this.pomodoroTime%60).padStart(2,'0')}`;
@@ -1215,7 +1190,7 @@ const App = {
     renderTodos() {
         const list = document.getElementById('todoList');
         document.getElementById('todoCount').textContent = this.todos.filter(t => !t.done).length;
-        list.innerHTML = this.todos.map(t => `<div class="todo-item"><div class="todo-checkbox ${t.done?'checked':''}" data-id="${t.id}"></div><span class="todo-text ${t.done?'done':''}">${t.text}</span><button class="todo-delete" data-id="${t.id}"><i class="fas fa-times"></i></button></div>`).join('');
+        list.innerHTML = this.todos.map(t => `<div class="todo-item"><div class="todo-checkbox ${t.done?'checked':''}" data-id="${t.id}"></div><span class="todo-text ${t.done?'done':''}">${_escHtml(t.text)}</span><button class="todo-delete" data-id="${t.id}"><i class="fas fa-times"></i></button></div>`).join('');
         list.querySelectorAll('.todo-checkbox').forEach(cb => cb.addEventListener('click', () => this.toggleTodo(parseInt(cb.dataset.id))));
         list.querySelectorAll('.todo-delete').forEach(btn => btn.addEventListener('click', () => this.deleteTodo(parseInt(btn.dataset.id))));
     },
@@ -1258,10 +1233,10 @@ const App = {
             list.style.display = 'none';
             pinnedArea.style.display = '';
             pinnedArea.innerHTML = pinned.map(n => {
-                const content = (n.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                const content = _escHtml(n.content || '').replace(/\n/g, '<br>');
                 return `<div class="tool-pinned-card" data-id="${n.id}">
                     <div class="tool-pinned-card-pin"><i class="fas fa-thumbtack"></i></div>
-                    ${n.title ? `<div class="tool-pinned-card-title">${n.title}</div>` : ''}
+                    ${n.title ? `<div class="tool-pinned-card-title">${_escHtml(n.title)}</div>` : ''}
                     <div class="tool-pinned-card-content">${content || '<span class="tool-pinned-card-empty">空笔记</span>'}</div>
                 </div>`;
             }).join('');
@@ -1283,11 +1258,11 @@ const App = {
         }
 
         list.innerHTML = sorted.map(n => {
-            const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
+            const preview = _escHtml((n.content || '').slice(0, 80).replace(/\n/g, ' '));
             const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
             return `<div class="note-item" data-id="${n.id}">
                 <div class="note-item-info">
-                    <div class="note-item-title">${n.title || '无标题'}</div>
+                    <div class="note-item-title">${_escHtml(n.title) || '无标题'}</div>
                     <div class="note-item-preview">${preview || '空笔记'}</div>
                 </div>
                 <span class="note-item-time">${time}</span>
@@ -1401,11 +1376,11 @@ const App = {
         }
 
         list.innerHTML = sorted.map(n => {
-            const preview = (n.content || '').slice(0, 80).replace(/\n/g, ' ');
+            const preview = _escHtml((n.content || '').slice(0, 80).replace(/\n/g, ' '));
             const time = new Date(n.updatedAt).toLocaleDateString('zh-CN');
             return `<div class="note-item ${this._currentNoteId == n.id ? 'active' : ''}" data-id="${n.id}">
                 <div class="note-item-info">
-                    <div class="note-item-title">${n.title || '无标题'}</div>
+                    <div class="note-item-title">${_escHtml(n.title) || '无标题'}</div>
                     <div class="note-item-preview">${n.pinned ? '<i class="fas fa-thumbtack" style="color:var(--accent);font-size:9px;margin-right:4px;"></i>' : ''}${preview || '空笔记'}</div>
                 </div>
                 <span class="note-item-time">${time}</span>
@@ -1424,7 +1399,7 @@ const App = {
         const editorArea = document.getElementById('viewNoteEditor');
         editorArea.innerHTML = `<div class="notes-editor-inner">
             <div class="notes-editor-toolbar">
-                <input type="text" class="notes-title-input" id="viewNoteTitle" value="${(note.title || '').replace(/"/g, '&quot;')}" placeholder="标题" autocomplete="off">
+                <input type="text" class="notes-title-input" id="viewNoteTitle" value="${_escHtml(note.title)}" placeholder="标题" autocomplete="off">
                 <div class="notes-toolbar-actions">
                     <button class="note-pin-btn ${note.pinned ? 'pinned' : ''}" id="viewNotePinBtn" title="固定"><i class="fas fa-thumbtack"></i></button>
                     <button class="note-delete-btn" id="viewNoteDeleteBtn" title="删除"><i class="fas fa-trash"></i></button>
@@ -1490,9 +1465,9 @@ const App = {
         if (pinned.length === 0) { container.style.display = 'none'; return; }
         container.style.display = '';
         container.innerHTML = pinned.map(n => {
-            const content = (n.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            const content = _escHtml(n.content || '').replace(/\n/g, '<br>');
             return `<div class="pinned-note-card" data-id="${n.id}">
-                ${n.title ? `<div class="pinned-note-title">${n.title}</div>` : ''}
+                ${n.title ? `<div class="pinned-note-title">${_escHtml(n.title)}</div>` : ''}
                 <div class="pinned-note-content">${content || '<span style="opacity:0.3">空笔记</span>'}</div>
             </div>`;
         }).join('');
@@ -1553,8 +1528,14 @@ const App = {
         if (document.getElementById('pwNumber').checked) chars += '0123456789';
         if (document.getElementById('pwSymbol').checked) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
         if (!chars) chars = 'abcdefghijklmnopqrstuvwxyz';
-        let pw = ''; const arr = new Uint32Array(len); crypto.getRandomValues(arr);
-        for (let i = 0; i < len; i++) pw += chars[arr[i] % chars.length];
+        let pw = '';
+        const arr = new Uint32Array(len);
+        crypto.getRandomValues(arr);
+        const limit = Math.floor(0x100000000 / chars.length) * chars.length;
+        for (let i = 0; i < len; i++) {
+            const v = arr[i];
+            pw += v < limit ? chars[v % chars.length] : chars[v % (limit / chars.length) % chars.length];
+        }
         document.getElementById('passwordDisplay').textContent = pw;
     },
 
@@ -1566,7 +1547,7 @@ const App = {
         const list = document.getElementById('clipboardList');
         document.getElementById('clipboardCount').textContent = this.clipboardItems.length;
         if (this.clipboardItems.length === 0) { list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:16px;opacity:0.4;">暂无内容</div>'; return; }
-        list.innerHTML = this.clipboardItems.map(item => `<div class="clipboard-item" data-id="${item.id}"><span class="clipboard-item-text">${item.text}</span><div class="clipboard-item-btns"><button class="clip-copy" title="复制"><i class="fas fa-copy"></i></button><button class="clip-delete" title="删除"><i class="fas fa-times"></i></button></div></div>`).join('');
+        list.innerHTML = this.clipboardItems.map(item => `<div class="clipboard-item" data-id="${item.id}"><span class="clipboard-item-text">${_escHtml(item.text)}</span><div class="clipboard-item-btns"><button class="clip-copy" title="复制"><i class="fas fa-copy"></i></button><button class="clip-delete" title="删除"><i class="fas fa-times"></i></button></div></div>`).join('');
         list.querySelectorAll('.clip-copy').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); navigator.clipboard.writeText(btn.closest('.clipboard-item').querySelector('.clipboard-item-text').textContent); }));
         list.querySelectorAll('.clip-delete').forEach(btn => btn.addEventListener('click', async (e) => { e.stopPropagation(); this.clipboardItems = this.clipboardItems.filter(i => i.id !== parseInt(btn.closest('.clipboard-item').dataset.id)); await Storage.set('clipboard_items', this.clipboardItems); this.renderClipboard(); }));
     },
@@ -1651,10 +1632,9 @@ const App = {
         document.getElementById('mdInput').addEventListener('input', () => this.renderMarkdown());
     },
 
-    renderMarkdown() {
-        let text = document.getElementById('mdInput').value;
-        if (!text.trim()) { document.getElementById('mdPreview').innerHTML = '<p class="md-placeholder">预览区域</p>'; return; }
-        text = text
+    _renderMarkdownText(text) {
+        if (!text.trim()) return '';
+        return '<p>' + text
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
@@ -1671,8 +1651,13 @@ const App = {
             .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
             .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
             .replace(/\n{2,}/g, '</p><p>')
-            .replace(/\n/g, '<br>');
-        document.getElementById('mdPreview').innerHTML = '<p>' + text + '</p>';
+            .replace(/\n/g, '<br>') + '</p>';
+    },
+
+    renderMarkdown() {
+        const text = document.getElementById('mdInput').value;
+        if (!text.trim()) { document.getElementById('mdPreview').innerHTML = '<p class="md-placeholder">预览区域</p>'; return; }
+        document.getElementById('mdPreview').innerHTML = this._renderMarkdownText(text);
     },
 
     // === 正则测试 ===
@@ -1761,7 +1746,7 @@ const App = {
         result.classList.add('active');
     },
 
-    _esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); },
+    _esc(s) { return _escHtml(s); },
 
     // === Lorem Ipsum ===
     initLorem() {
@@ -1798,8 +1783,6 @@ const App = {
     airdropFiles: [],
     airdropTimer: null,
 
-    initAirdrop() {},
-
     toggleAirdrop() {
         const panel = document.getElementById('airdropPanel');
         panel.classList.toggle('active');
@@ -1818,10 +1801,10 @@ const App = {
     },
 
     startAirdropTimer() {
-        clearInterval(this.airdropTimer);
+        if (this.airdropTimer) clearInterval(this.airdropTimer);
         this.airdropTimer = this._addInterval(() => {
             const panel = document.getElementById('airdropPanel');
-            if (!panel.classList.contains('active')) { clearInterval(this.airdropTimer); this.airdropTimer = null; return; }
+            if (!panel.classList.contains('active')) { clearInterval(this.airdropTimer); this._intervals = this._intervals.filter(id => id !== this.airdropTimer); this.airdropTimer = null; return; }
             this.renderAirdropList();
         }, 1000);
     },
@@ -1872,12 +1855,12 @@ const App = {
             html += `<div class="airdrop-item" data-id="${f.id}">
                 <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
                 <div class="airdrop-item-info">
-                    <div class="airdrop-item-name">${f.name}</div>
+                    <div class="airdrop-item-name">${_escHtml(f.name)}</div>
                     <div class="airdrop-item-meta"><span>${this.formatSize(f.size)}</span></div>
                 </div>
                 <div class="airdrop-item-timer ${urgent ? 'urgent' : ''}">${remaining}</div>
                 <div class="airdrop-item-actions">
-                    <a class="adl-download" href="${f.downloadUrl}" download="${f.name}" title="下载"><i class="fas fa-download"></i></a>
+                    <a class="adl-download" href="${f.downloadUrl}" download="${_escHtml(f.name)}" title="下载"><i class="fas fa-download"></i></a>
                     <button class="adl-delete" title="删除"><i class="fas fa-trash"></i></button>
                 </div>
             </div>`;
@@ -1888,7 +1871,7 @@ const App = {
             html += `<div class="airdrop-item" style="opacity:0.35;" data-id="${f.id}">
                 <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
                 <div class="airdrop-item-info">
-                    <div class="airdrop-item-name" style="text-decoration:line-through;">${f.name}</div>
+                    <div class="airdrop-item-name" style="text-decoration:line-through;">${_escHtml(f.name)}</div>
                     <div class="airdrop-item-meta"><span>已过期</span></div>
                 </div>
                 <div class="airdrop-item-actions" style="opacity:1;">

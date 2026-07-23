@@ -233,6 +233,15 @@
       "icon": "fa-solid fa-globe",
       "color": "#6366f1",
       "category": "Docker"
+    },
+    {
+      "id": 28,
+      "sort_order": 27,
+      "name": "filecodebox",
+      "url": "http://nas.local:51125",
+      "icon": "fa-solid fa-globe",
+      "color": "#6366f1",
+      "category": "Docker"
     }
   ],
   "engines": [

@@ -178,6 +178,13 @@ app.get('/api/hitokoto', (req, res) => {
 });
 
 // === Favicon Proxy ===
+function isPrivateIP(hostname) {
+    if (/^127\./.test(hostname) || hostname === 'localhost' || hostname === '::1') return true;
+    if (/^10\./.test(hostname) || /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) || /^192\.168\./.test(hostname)) return true;
+    if (/^0\./.test(hostname) || /^169\.254\./.test(hostname)) return true;
+    return false;
+}
+
 app.get('/api/favicon', (req, res) => {
     let targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).json({ error: 'missing url' });
@@ -185,6 +192,8 @@ app.get('/api/favicon', (req, res) => {
 
     let hostname;
     try { hostname = new URL(targetUrl).hostname; } catch (e) { return res.status(400).json({ error: 'invalid url' }); }
+
+    if (isPrivateIP(hostname)) return res.status(403).json({ error: 'private host not allowed' });
 
     const sources = [];
     const dnsMap = db.kv.dns_map || [];
@@ -261,7 +270,9 @@ app.post('/api/wallpaper/upload', express.raw({ limit: '10mb', type: '*/*' }), (
 });
 
 app.delete('/api/wallpaper/delete/:file', (req, res) => {
-    const filePath = path.join(WALLPAPER_DIR, req.params.file);
+    const file = req.params.file.replace(/[^a-zA-Z0-9._-]/g, '');
+    const filePath = path.join(WALLPAPER_DIR, file);
+    if (!filePath.startsWith(WALLPAPER_DIR)) return res.status(400).json({ error: 'invalid path' });
     try { fs.unlinkSync(filePath); } catch (e) {}
     res.json({ ok: true });
 });
@@ -336,6 +347,7 @@ app.get('/api/airdrop/download/:id', (req, res) => {
         saveDB(db);
         return res.status(410).json({ error: 'File expired' });
     }
+    if (!file.path.startsWith(UPLOAD_DIR)) return res.status(403).json({ error: 'forbidden' });
     res.setHeader('Content-Disposition', 'attachment; filename="' + encodeURIComponent(file.name) + '"');
     res.setHeader('Content-Type', file.mime);
     fs.createReadStream(file.path).pipe(res);
@@ -348,6 +360,13 @@ app.delete('/api/airdrop/:id', (req, res) => {
     files = files.filter(f => f.id !== req.params.id);
     saveAirdropList(files);
     broadcast('airdrop_change', { action: 'delete', id: req.params.id });
+    res.json({ ok: true });
+});
+
+// === Reset ===
+app.post('/api/reset', (req, res) => {
+    try { fs.unlinkSync(DB_PATH); } catch (e) {}
+    db = initDB();
     res.json({ ok: true });
 });
 
