@@ -1,0 +1,14 @@
+# 依赖与构建产物
+node_modules/
+dist/
+
+# 运行时用户数据（容器内挂载 ./data:/data，绝不入库）
+server/data.json
+server/uploads/
+server/wallpapers/
+
+# 系统/编辑器
+.DS_Store
+*.log
+.idea/
+.vscode/

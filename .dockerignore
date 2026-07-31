@@ -1,6 +1,7 @@
 node_modules
 .git
 .claude
+dist
 server/data.json
 server/uploads/*
 server/wallpapers/*
