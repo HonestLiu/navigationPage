@@ -1,0 +1,25 @@
+# MyPageHome 部署配置
+#
+# ⚠️ 关键：只挂载「数据」相关的子路径。
+#    绝不要把 /app 或 /app/server 整个挂上去 —— 那样会遮掉镜像里的
+#    server/index.js，容器启动报：
+#    Error: Cannot find module '/app/server/index.js'
+#
+services:
+  mypage:
+    # 用 GitHub Actions 推到 GHCR 的镜像
+    image: ghcr.io/honestliu/navigationpage:latest
+    # 想本地直接构建镜像，把上面那行换成：build: .
+    container_name: mypagehome
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    volumes:
+      # 导航/配置数据库（文件，首次运行会自动写入默认值）
+      - ./data.json:/app/server/data.json
+      # 文件快传(Airdrop)上传目录
+      - ./uploads:/app/server/uploads
+      # 壁纸上传目录
+      - ./wallpapers:/app/server/wallpapers
