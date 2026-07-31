@@ -6,18 +6,16 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-let DB_PATH = path.join(__dirname, 'data.json');
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
-const WALLPAPER_DIR = path.join(__dirname, 'wallpapers');
-
-// Fix: if data.json is a directory (Docker volume mount issue), use fallback path
-try {
-    if (fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).isDirectory()) {
-        DB_PATH = path.join(__dirname, 'data', 'data.json');
-        const dir = path.dirname(DB_PATH);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    }
-} catch (e) {}
+// ===== 数据目录（关键：与只读代码分离，便于 Docker 部署）=====
+// 容器内默认 DATA_DIR=/data（由 Dockerfile 的 ENV 注入）：所有「会被改写」的文件
+// 只落在 /data 下，应用代码只读放在 /app。这样部署时只需挂载【一个】数据卷
+// /data，绝不会用挂载把 /app 下的代码（含 server/index.js）遮掉 —— 这正是
+// 生手在极空间/群晖这类 GUI 里部署失败率最高的坑。
+// 本地开发不设置 DATA_DIR 时回落到 __dirname（/app/server），行为与改造前一致。
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const DB_PATH = path.join(DATA_DIR, 'data.json');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+const WALLPAPER_DIR = path.join(DATA_DIR, 'wallpapers');
 
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 if (!fs.existsSync(WALLPAPER_DIR)) fs.mkdirSync(WALLPAPER_DIR, { recursive: true });

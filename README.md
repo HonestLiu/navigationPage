@@ -88,27 +88,32 @@ npm start
 # 构建镜像
 docker build --no-cache -t navigation-page .
 
-# 运行容器
+# 运行容器（不持久化，数据在容器内，重启会丢）
 docker run -d -p 3000:3000 navigation-page
 ```
 
-如需持久化数据（可选）：
+持久化数据（推荐，只需挂载一个卷 `/data`）：
 
 ```bash
-# 用 bind mount 挂载宿主机目录（推荐）
+# 挂载宿主机目录做数据持久化
 mkdir -p ~/nav-data
-docker run -d -p 3000:3000 -v ~/nav-data:/app/server/data navigation-page
+docker run -d -p 3000:3000 -v ~/nav-data:/data navigation-page
 ```
 
-> **注意**：不要挂载整个 `/app/server` 目录（会覆盖 `index.js`），也不要挂载单个文件路径如 `/app/server/data.json`（Docker 会创建目录而非文件）。
+> **关键**：本应用代码只读放在 `/app`，所有用户数据只写在 `/data`。
+> 因此**只需挂载 `/data` 这一个卷**即可持久化；**不要**挂载 `/app` 或 `/app/server`
+> （会把镜像里的代码遮掉，容器反复重启并报 `MODULE_NOT_FOUND`）。
 
 > 如果宿主机 3000 端口被占用，换端口映射即可，例如 `-p 3001:3000`。
+
+也可以用 `docker compose up -d`（仓库自带 `docker-compose.yml`，已正确挂载 `/data`）。
 
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `PORT` | `3000` | 服务监听端口 |
+| `DATA_DIR` | 容器 `/data` / 本地 `__dirname` | 用户数据根目录（data.json、uploads、wallpapers）；容器内部署一般无需设置 |
 
 ## API 接口
 
@@ -142,7 +147,7 @@ docker run -d -p 3000:3000 -v ~/nav-data:/app/server/data navigation-page
 - **前端**：原生 HTML / CSS / JavaScript（无框架）
 - **图标**：Font Awesome 6
 - **实时通信**：Server-Sent Events (SSE)
-- **数据存储**：JSON 文件（`server/data.json`）
+- **数据存储**：容器内 JSON 文件（`/data/data.json`；开发与未挂载 `/data` 时回退到 `server/data.json`）
 
 ## 项目结构
 
@@ -156,8 +161,9 @@ navigationPage/
 │   └── storage.js      # 数据存储层
 ├── assets/             # 静态资源（图标等）
 ├── server/
-│   ├── index.js        # Express 服务
-│   ├── data.json       # 数据文件
+│   └── index.js        # Express 服务（代码只读）
+├── /data/              # 运行时数据目录（容器挂载点，不在仓库内）
+│   ├── data.json       # 导航/配置数据
 │   ├── uploads/        # 空投文件
 │   └── wallpapers/     # 壁纸文件
 ├── Dockerfile
@@ -180,12 +186,12 @@ docker start <容器名>
 
 # 方案 2：删除重建
 docker rm -f <容器名>
-docker run -d -p 3000:3000 -v nav-data:/app/server navigation-page
+docker run -d -p 3000:3000 -v nav-data:/data navigation-page
 
 # 方案 3：无缓存重建镜像后再启动
 docker build --no-cache -t navigation-page .
 docker rm -f <容器名>
-docker run -d -p 3000:3000 -v nav-data:/app/server navigation-page
+docker run -d -p 3000:3000 -v nav-data:/data navigation-page
 ```
 
 > 新版本已加入 `SIGTERM` / `SIGINT` 信号处理，`docker restart` 现在可以正常工作。如果仍然遇到此问题，用方案 1 或 2 先停掉旧进程再启动。

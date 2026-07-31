@@ -1,8 +1,8 @@
 # MyPageHome 部署配置
 #
-# ⚠️ 关键：只挂载「数据」相关的子路径。
-#    绝不要把 /app 或 /app/server 整个挂上去 —— 那样会遮掉镜像里的
-#    server/index.js，容器启动会直接退出并提示「/app/server/index.js 不存在」。
+# 设计原则：应用代码只读放在 /app，所有会改的数据只写在 /data。
+# 👉 因此【只需挂载一个卷 ./data:/data】即可持久化，绝不要挂载 /app 或 /app/server
+#    （那会把镜像里的代码遮掉，导致容器反复重启并报 MODULE_NOT_FOUND）。
 #
 # ⚠️ 关于镜像来源：
 #    默认从 GitHub Container Registry 拉取 ghcr.io/honestliu/navigationpage:latest
@@ -22,12 +22,8 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
+      # 数据根目录（容器内）；挂载的卷只需对应到这个路径
+      - DATA_DIR=/data
     volumes:
-      # 导航/配置数据库。注意：宿主机上此路径不存在时，Docker 会把它建成
-      # 一个【目录】；应用内已做兼容（自动改用 data/data.json），数据照常持久化，
-      # 不影响运行。若想让宿主机上显示为真正的 data.json 文件，部署前先 `touch data.json`。
-      - ./data.json:/app/server/data.json
-      # 文件快传(Airdrop)上传目录
-      - ./uploads:/app/server/uploads
-      # 壁纸上传目录
-      - ./wallpapers:/app/server/wallpapers
+      # 唯一需要的挂载：持久化全部用户数据（导航配置 + 上传文件 + 壁纸）
+      - ./data:/data
