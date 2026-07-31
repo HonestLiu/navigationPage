@@ -1,41 +1,64 @@
-name: Build and Push Docker Image
+name: Build & Push Multi-Arch Image
 
+# 触发条件：推送到 main/master、打 v* 标签时构建并推送；PR 时只构建不推送(做 CI 校验)
 on:
   push:
-    branches:
-      - main
-      - master
-    tags:
-      - 'v*'
+    branches: [main, master]
+    tags: ['v*.*.*', 'v*']
   pull_request:
-    branches:
-      - main
-      - master
+    branches: [main, master]
+
+# 同一分支/标签并发只保留最新一次，避免重复推送与覆盖
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write        # 推送镜像到容器仓库(GHCR / Gitea 包仓库)需要此权限
 
 env:
+  # ===== 目标架构 =====
+  #   linux/amd64   : x64 Linux
+  #   linux/arm64   : 苹果芯片(M 系列) 与 64 位 ARM Linux(树莓派 4/5、ARM 服务器等)
+  #                   —— 二者是同一套指令集，一个 linux/arm64 镜像通吃，无需分开构建
+  #   linux/arm/v7  : 32 位 ARM Linux(旧款树莓派 / 32 位系统)
+  #
+  # 注意：官方 node:20-alpine 可能已不再提供 linux/arm/v7 变体
+  #       (Node.js 自 v20 起停止提供 32 位 ARM 预编译包)。若 arm/v7 构建失败，二选一：
+  #         1) 推荐：把下面改成  linux/amd64,linux/arm64  (现代 ARM 几乎都是 64 位)
+  #         2) 或把 Dockerfile 的 FROM 改为 node:18-alpine(该版本仍带 arm/v7 支持)
+  PLATFORMS: linux/amd64,linux/arm64,linux/arm/v7
+
+  # ===== 镜像仓库 =====
+  # 默认推送到 GitHub Container Registry (GHCR)，配合 GitHub Actions 使用。
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # 本仓库实际托管在自托管的 Gitea(192.168.31.191:30000)，若用 Gitea Actions 运行，
+  # 把上面一行改成：
+  #   REGISTRY: 192.168.31.191:30000
+  # 镜像名会自动转为小写(仓库名大小写在注册表中不合法)。
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
+      - name: Set up QEMU (跨架构模拟)
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
+      # 仓库名统一转小写，避免 HonestLiu/MyPageHome 这种大写名被注册表拒绝
+      - name: Lowercase image name
+        id: img
+        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      # 登录注册表：GitHub Actions 用 GITHUB_TOKEN 推 GHCR；
+      # Gitea Actions 同样提供 GITHUB_TOKEN，可推送到 Gitea 包仓库(需在仓库设置里授予包写权限)
+      - name: Log in to ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
@@ -43,33 +66,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata (tags, labels)
+      - name: Docker metadata (tags & labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.img.outputs.name }}
           tags: |
+            # main/master 分支推送时打 latest
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+            # 语义化版本标签 v1.2.3 -> 1.2.3 与 1.2
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            # 提交短 SHA，便于回滚
             type=sha,format=short
 
-      - name: Build and push Docker image
-        id: build
+      - name: Build and push multi-arch image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile
+          platforms: ${{ env.PLATFORMS }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Generate artifact attestation
-        if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
+          # —— 构建缓存(可选) ——
+          # 仅 GitHub Actions 生效；Gitea 请删除下面两行或改用 type=registry。
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
