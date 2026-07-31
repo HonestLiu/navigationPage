@@ -57,7 +57,7 @@
   --ok: #3ddc97;
   --warn: #ffbf47;
 
-  --sidebar-w: 70px;
+  --sidebar-w: 58px;
   --maxw: 1080px;
 }
 
@@ -192,21 +192,21 @@ textarea { resize: vertical; }
   left: 14px;
   bottom: 14px;
   width: var(--sidebar-w);
-  border-radius: 26px;
-  padding: 14px 0;
+  border-radius: 22px;
+  padding: 10px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   z-index: 40;
 }
-.sidebar-nav { display: flex; flex-direction: column; gap: 5px; width: 100%; align-items: center; flex: 1; }
-.sidebar-divider { width: 30px; height: 1px; background: var(--glass-brd); margin: 4px 0; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; align-items: center; flex: 1; }
+.sidebar-divider { width: 26px; height: 1px; background: var(--glass-brd); margin: 3px 0; }
 
 .sidebar-btn {
-  width: 46px;
-  height: 46px;
-  border-radius: 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -217,7 +217,7 @@ textarea { resize: vertical; }
   transition: background .2s, color .2s, transform .2s, box-shadow .2s;
 }
 .sidebar-btn span { display: none; }
-.sidebar-btn i { font-size: 18px; }
+.sidebar-btn i { font-size: 16px; }
 .sidebar-btn:hover { background: var(--surface); color: var(--text); transform: translateY(-1px); }
 .sidebar-btn.active {
   background: var(--accent-20);
@@ -447,12 +447,19 @@ textarea { resize: vertical; }
 /* 待办 */
 .todo-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .todo-input-row input { flex: 1; }
-.todo-add-btn, .clipboard-add-btn, .note-new-btn {
+.todo-add-btn, .note-new-btn {
   width: 42px; border-radius: var(--r-xs); background: var(--accent); color: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 15px;
   transition: filter .2s, transform .2s;
 }
 .todo-add-btn:hover, .clipboard-add-btn:hover { filter: brightness(1.1); transform: scale(1.04); }
+.clipboard-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.clipboard-input-row input { flex: 1; min-width: 0; }
+.clipboard-add-btn {
+  width: auto; padding: 0 16px; border-radius: var(--r-xs); background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600;
+  transition: filter .2s, transform .2s;
+}
 .todo-list, .clipboard-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
 .todo-item {
   display: flex; align-items: center; gap: 10px;
@@ -525,10 +532,15 @@ textarea { resize: vertical; }
 .pinned-note-card-pin { color: var(--accent); }
 
 /* 随机数 / 计数器 */
-.random-display, .password-display {
+.random-display {
   font-size: 30px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;
   font-family: var(--mono); letter-spacing: 1px;
   padding: 8px 0; word-break: break-all;
+}
+.password-display {
+  font-size: 16px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums;
+  font-family: var(--mono); line-height: 1.5;
+  padding: 10px 0; word-break: break-all;
 }
 .random-range { display: flex; align-items: center; gap: 8px; justify-content: center; margin: 10px 0; }
 .random-range input { width: 70px; text-align: center; }
