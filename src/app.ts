@@ -11,6 +11,26 @@ import { initHitokoto } from './features/hitokoto';
 import { initTools, expandTool, closeOverlay } from './features/tools';
 import { initNotesView } from './features/tools/notes';
 
+// 默认工具配置（首次运行播种，确保设置里工具开关列表非空、主视图工具全部可见）
+const DEFAULT_TOOLS = [
+  { id: 'clock', name: '时钟', icon: 'fa-solid fa-clock' },
+  { id: 'pomodoro', name: '番茄钟', icon: 'fa-solid fa-stopwatch' },
+  { id: 'todo', name: '待办清单', icon: 'fa-solid fa-list-check' },
+  { id: 'notes', name: '快捷笔记', icon: 'fa-solid fa-pen-to-square' },
+  { id: 'random', name: '随机数', icon: 'fa-solid fa-dice' },
+  { id: 'counter', name: '字数统计', icon: 'fa-solid fa-font' },
+  { id: 'base64', name: 'Base64', icon: 'fa-solid fa-code' },
+  { id: 'password', name: '密码生成', icon: 'fa-solid fa-key' },
+  { id: 'clipboard', name: '剪贴板', icon: 'fa-solid fa-clipboard' },
+  { id: 'timestamp', name: '时间戳转换', icon: 'fa-solid fa-clock-rotate-left' },
+  { id: 'json', name: 'JSON 格式化', icon: 'fa-solid fa-brackets-curly' },
+  { id: 'markdown', name: 'Markdown 预览', icon: 'fa-brands fa-markdown' },
+  { id: 'regex', name: '正则测试', icon: 'fa-solid fa-asterisk' },
+  { id: 'color', name: '颜色工具', icon: 'fa-solid fa-palette' },
+  { id: 'diff', name: '文本对比', icon: 'fa-solid fa-code-compare' },
+  { id: 'lorem', name: 'Lorem Ipsum', icon: 'fa-solid fa-paragraph' },
+];
+
 // 全局视图切换
 function switchView(view: string): void {
     $$('.sidebar-btn[data-view]').forEach(btn => btn.classList.toggle('active', (btn as HTMLElement).dataset.view === view));
@@ -87,6 +107,11 @@ export async function init(): Promise<void> {
     state.engines = await api.getEngines();
     state.currentEngine = (await api.getKv('current_engine')) || 'google';
     state.toolsConfig = (await api.getKv('tools_config')) || [];
+    // 首次运行播种默认工具配置（全部启用），避免设置里工具列表为空、主视图工具被隐藏
+    if (state.toolsConfig.length === 0) {
+        state.toolsConfig = DEFAULT_TOOLS.map((t, i) => ({ ...t, enabled: true, sort_order: i }));
+        await api.setKv('tools_config', state.toolsConfig);
+    }
     state.todos = (await api.getKv('todo_list')) || [];
     state.notes = (await api.getKv('quick_notes')) || [];
     state.clipboardItems = (await api.getKv('clipboard_items')) || [];
@@ -108,8 +133,4 @@ export async function init(): Promise<void> {
     airdrop.initAirdrop();
     initHitokoto();
     await initTools();
-
-    // 应用工具区折叠状态
-    const collapsed = await api.getKv('tools_collapsed');
-    $('#toolsSection')?.classList.toggle('collapsed', !!collapsed);
 }

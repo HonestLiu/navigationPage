@@ -672,7 +672,7 @@ textarea { resize: vertical; }
 .settings-desc { font-size: 13px; color: var(--text-3); margin: -6px 0 14px; }
 
 .category-list, .engine-list, .nav-items-list, .dns-map-list, .tools-config-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-.category-row, .engine-row, .dns-map-row, .tool-config-row, .nav-items-list .edit-item {
+.category-row, .engine-row, .dns-map-row, .tool-config-row, .nav-item-row, .nav-items-list .edit-item {
   display: flex; align-items: center; gap: 10px; padding: 11px 13px;
   border-radius: 14px; background: var(--surface);
 }
@@ -733,8 +733,8 @@ textarea { resize: vertical; }
 .tool-config-name { flex: 1; font-size: 14px; font-weight: 600; }
 .toggle-switch { position: relative; width: 42px; height: 24px; border-radius: 99px; background: var(--surface-2); cursor: pointer; transition: background .2s; flex-shrink: 0; }
 .toggle-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
-.toggle-switch.on { background: var(--accent); }
-.toggle-switch.on::after { transform: translateX(18px); }
+.toggle-switch.active { background: var(--accent); }
+.toggle-switch.active::after { transform: translateX(18px); }
 .dragging { opacity: .5; }
 .drag-over { border: 1px dashed var(--accent); }
 
