@@ -73,11 +73,22 @@
 ### 本地运行
 
 ```bash
-# 安装依赖
+# 安装依赖（含前端 dev 依赖）
 npm install
+```
 
-# 启动服务
-npm start
+**开发模式**（前端热更新，需前后端同时运行）：
+
+```bash
+npm run dev    # 前端 Vite 开发服务器 http://localhost:5173（/api 已代理到后端 3000）
+npm start      # 另开终端启动后端 Express（http://localhost:3000）
+```
+
+**构建后运行**（与 Docker 行为一致）：
+
+```bash
+npm run build  # 产出 dist/
+npm start      # 启动 Express 托管 dist/，http://localhost:3000
 ```
 
 访问 http://localhost:3000
@@ -144,7 +155,7 @@ docker run -d -p 3000:3000 -v ~/nav-data:/data navigation-page
 ## 技术栈
 
 - **后端**：Node.js + Express
-- **前端**：原生 HTML / CSS / JavaScript（无框架）
+- **前端**：Vite + TypeScript（模块化源码在 `src/`，构建产物 `dist/` 由 Express 托管）
 - **图标**：Font Awesome 6
 - **实时通信**：Server-Sent Events (SSE)
 - **数据存储**：容器内 JSON 文件（`/data/data.json`；开发与未挂载 `/data` 时回退到 `server/data.json`）
@@ -153,21 +164,45 @@ docker run -d -p 3000:3000 -v ~/nav-data:/data navigation-page
 
 ```
 navigationPage/
-├── index.html          # 主页面
+├── index.html              # Vite 入口（<script type="module" src="/src/main.ts">）
 ├── css/
-│   └── style.css       # 样式
-├── js/
-│   ├── app.js          # 前端逻辑
-│   └── storage.js      # 数据存储层
-├── assets/             # 静态资源（图标等）
-├── server/
-│   └── index.js        # Express 服务（代码只读）
-├── /data/              # 运行时数据目录（容器挂载点，不在仓库内）
-│   ├── data.json       # 导航/配置数据
-│   ├── uploads/        # 空投文件
-│   └── wallpapers/     # 壁纸文件
-├── Dockerfile
-├── package.json
+│   └── style.css           # 全局样式（经 main.ts import 由 Vite 打包进 dist）
+├── src/                    # 前端源码（TypeScript，Vite 编译为 dist/）
+│   ├── main.ts             # 入口：引入 Font Awesome + store，调用 App.init
+│   ├── app.ts              # 协调器：加载状态、绑定全局事件、调用各模块 init
+│   ├── store.ts            # 集中状态 + registerRemoteHandler + initSSE + resolveUrl
+│   ├── api.ts              # 后端接口封装
+│   ├── theme.ts            # 主题 / 强调色
+│   ├── types.ts / dom.ts   # 类型定义 / DOM 工具函数
+│   └── features/           # 按功能拆分的模块（各订阅自己关心的 SSE 事件）
+│       ├── search.ts       # 搜索与联想
+│       ├── engines.ts      # 搜索引擎管理
+│       ├── nav.ts          # 导航项 + 分类 + 右键菜单
+│       ├── settings.ts     # 设置面板 / 导入导出 / 重置
+│       ├── wallpaper.ts    # 壁纸（必应 / 随机 / 上传）
+│       ├── airdrop.ts      # 空投文件传输
+│       ├── hitokoto.ts     # 一言
+│       └── tools/          # 16 个工具模块 + index.ts（initTools / expandTool / closeOverlay）
+├── server/                 # 后端（CommonJS，node server/index.js 启动）
+│   ├── index.js            # 薄启动层：静态托管 dist/、注册路由、SPA 回退
+│   ├── db.js               # 数据目录与读写（DATA_DIR 与代码分离）
+│   ├── sse.js              # SSE 广播与连接管理（30s 心跳）
+│   ├── services/
+│   │   └── favicon.js      # Favicon 抓取与 HTML 解析
+│   └── routes/             # 各业务路由（高内聚低耦合）
+│       ├── kv.js           # 通用 KV 配置
+│       ├── nav.js          # 导航项 CRUD + 排序
+│       ├── engines.js      # 搜索引擎 CRUD
+│       ├── wallpaper.js    # 壁纸上传 / 删除
+│       ├── airdrop.js      # 空投上传 / 下载 / 过期清理
+│       └── misc.js         # 一言 / Favicon 代理 / 重置
+├── dist/                   # vite build 产物（构建生成，已在 .gitignore）
+├── /data/                  # 运行时数据目录（容器挂载点，不在仓库内）
+│   ├── data.json           # 导航/配置数据
+│   ├── uploads/            # 空投文件
+│   └── wallpapers/         # 壁纸文件
+├── Dockerfile              # 多阶段构建（vite build -> dist）
+├── package.json / tsconfig.json / vite.config.ts
 └── README.md
 ```
 
