@@ -122,6 +122,7 @@ export async function init(): Promise<void> {
     // 初始化各功能模块
     theme.initTheme();
     await engines.renderEngines();
+    engines.initEngines();
     nav.renderCategoryTabs();
     nav.renderNavItems();
     nav.applyLayoutPosition();

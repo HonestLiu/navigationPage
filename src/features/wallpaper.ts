@@ -3,6 +3,25 @@ import { $, $$, escHtml } from '../dom';
 
 // ===== 壁纸模块 =====
 
+// 统一应用壁纸背景：设为 fixed，使页面滚动时背景不动、内容动
+function applyWallpaperStyle(url?: string): void {
+    if (url) {
+        document.body.style.backgroundImage = `url(${url})`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundRepeat = 'no-repeat';
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.classList.add('wallpaper-active');
+    } else {
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+        document.body.style.backgroundAttachment = '';
+        document.body.classList.remove('wallpaper-active', 'wallpaper-light');
+    }
+}
+
 function detectWallpaperBrightness(url: string): void {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -28,8 +47,7 @@ function detectWallpaperBrightness(url: string): void {
 async function loadWallpaper(): Promise<void> {
     const wp = await api.getKv('wallpaper');
     if (wp && wp.url) {
-        document.body.style.backgroundImage = `url(${wp.url})`;
-        document.body.classList.add('wallpaper-active');
+        applyWallpaperStyle(wp.url);
         detectWallpaperBrightness(wp.url);
     }
 }
@@ -48,8 +66,7 @@ async function fetchBingWallpaper(idx: number): Promise<void> {
         const res = await fetch(`https://cn.bing.com/HPImageArchive.aspx?format=js&idx=${idx}&n=1&mkt=zh-CN`);
         const data = await res.json();
         const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
-        document.body.style.backgroundImage = `url(${url})`;
-        document.body.classList.add('wallpaper-active');
+        applyWallpaperStyle(url);
         detectWallpaperBrightness(url);
         await api.setKv('wallpaper', { url, timestamp: Date.now() });
         const hist = await api.getKv('wallpaper_history') || [];
@@ -80,8 +97,7 @@ async function uploadWallpaper(e: Event): Promise<void> {
             });
             const data = await res.json();
             if (data.ok) {
-                document.body.style.backgroundImage = `url(${data.url})`;
-                document.body.classList.add('wallpaper-active');
+                applyWallpaperStyle(data.url);
                 detectWallpaperBrightness(data.url);
                 await api.setKv('wallpaper', { url: data.url, timestamp: Date.now() });
                 const hist = await api.getKv('wallpaper_history') || [];
@@ -106,9 +122,7 @@ async function uploadWallpaper(e: Event): Promise<void> {
 }
 
 export async function resetWallpaper(): Promise<void> {
-    document.body.style.backgroundImage = '';
-    document.body.classList.remove('wallpaper-active');
-    document.body.classList.remove('wallpaper-light');
+    applyWallpaperStyle();
     await api.setKv('wallpaper', null);
     await updateWallpaperPreview();
 }
@@ -124,8 +138,7 @@ async function renderWallpaperHistory(): Promise<void> {
     grid.innerHTML = hist.map(item => `<div class="history-item ${cur && cur.url === item.url ? 'active' : ''}" data-url="${escHtml(item.url)}"><img src="${escHtml(item.url)}" alt="${escHtml(item.name || '')}"></div>`).join('');
     grid.querySelectorAll('.history-item').forEach(item => item.addEventListener('click', async () => {
         const url = (item as HTMLElement).dataset.url!;
-        document.body.style.backgroundImage = `url(${url})`;
-        document.body.classList.add('wallpaper-active');
+        applyWallpaperStyle(url);
         detectWallpaperBrightness(url);
         await api.setKv('wallpaper', { url, timestamp: Date.now() });
         await renderWallpaperHistory();
@@ -156,13 +169,10 @@ export function initWallpaper(): void {
     registerRemoteHandler((type, key, data) => {
         if (type === 'kv' && key === 'wallpaper') {
             if (data && data.url) {
-                document.body.style.backgroundImage = `url(${data.url})`;
-                document.body.classList.add('wallpaper-active');
+                applyWallpaperStyle(data.url);
                 detectWallpaperBrightness(data.url);
             } else {
-                document.body.style.backgroundImage = '';
-                document.body.classList.remove('wallpaper-active');
-                document.body.classList.remove('wallpaper-light');
+                applyWallpaperStyle();
             }
             updateWallpaperPreview();
         } else if (type === 'kv' && key === 'wallpaper_history') {

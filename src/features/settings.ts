@@ -2,7 +2,7 @@ import { state, api, registerRemoteHandler } from '../store';
 import { $, $$, escHtml } from '../dom';
 import type { Engine, DnsEntry } from '../types';
 import * as nav from './nav';
-import { renderEngines } from './engines';
+import { renderEngines, selectEngine } from './engines';
 
 export function toggleSettings(): void {
     const sp = $('#settingsPanel');
@@ -60,8 +60,12 @@ export async function renderSettingsLists(): Promise<void> {
     const engineList = $('#engineList');
     if (engineList) {
         engineList.innerHTML = state.engines.map(engine =>
-            `<div class="engine-row" data-id="${escHtml(engine.id)}"><div class="item-icon" style="background:${escHtml(engine.color)};"><i class="${escHtml(engine.icon)}"></i></div><div class="item-info"><div class="item-name">${escHtml(engine.name)}</div><div class="item-url">${escHtml(engine.url)}</div></div><div class="item-actions"><button class="edit-item" data-id="${escHtml(engine.id)}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${escHtml(engine.id)}"><i class="fas fa-trash"></i></button></div></div>`
+            `<div class="engine-row" data-id="${escHtml(engine.id)}"><div class="item-icon" style="background:${escHtml(engine.color)};"><i class="${escHtml(engine.icon)}"></i></div><div class="item-info"><div class="item-name">${escHtml(engine.name)}</div><div class="item-url">${escHtml(engine.url)}</div></div><button class="engine-default ${engine.id === state.currentEngine ? 'is-default' : ''}" data-id="${escHtml(engine.id)}">${engine.id === state.currentEngine ? '默认' : '设为默认'}</button><div class="item-actions"><button class="edit-item" data-id="${escHtml(engine.id)}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${escHtml(engine.id)}"><i class="fas fa-trash"></i></button></div></div>`
         ).join('');
+        engineList.querySelectorAll('.engine-default').forEach(btn => btn.addEventListener('click', async () => {
+            await selectEngine((btn as HTMLElement).dataset.id!);
+            renderSettingsLists();
+        }));
         engineList.querySelectorAll('.edit-item').forEach(btn => btn.addEventListener('click', () => editEngine((btn as HTMLElement).dataset.id!)));
         engineList.querySelectorAll('.delete-item').forEach(btn => btn.addEventListener('click', () => deleteEngine((btn as HTMLElement).dataset.id!)));
     }
