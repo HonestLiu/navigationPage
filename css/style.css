@@ -190,7 +190,6 @@ textarea { resize: vertical; }
   position: fixed;
   top: 14px;
   left: 14px;
-  bottom: 14px;
   width: var(--sidebar-w);
   border-radius: 22px;
   padding: 10px 0;
