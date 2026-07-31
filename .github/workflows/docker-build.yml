@@ -22,13 +22,8 @@ env:
   #   linux/amd64   : x64 Linux
   #   linux/arm64   : 苹果芯片(M 系列) 与 64 位 ARM Linux(树莓派 4/5、ARM 服务器等)
   #                   —— 二者是同一套指令集，一个 linux/arm64 镜像通吃，无需分开构建
-  #   linux/arm/v7  : 32 位 ARM Linux(旧款树莓派 / 32 位系统)
-  #
-  # 注意：官方 node:20-alpine 可能已不再提供 linux/arm/v7 变体
-  #       (Node.js 自 v20 起停止提供 32 位 ARM 预编译包)。若 arm/v7 构建失败，二选一：
-  #         1) 推荐：把下面改成  linux/amd64,linux/arm64  (现代 ARM 几乎都是 64 位)
-  #         2) 或把 Dockerfile 的 FROM 改为 node:18-alpine(该版本仍带 arm/v7 支持)
-  PLATFORMS: linux/amd64,linux/arm64,linux/arm/v7
+  # 注：已放弃 32 位 ARM(linux/arm/v7)；即使是树莓派也一律用 64 位镜像。
+  PLATFORMS: linux/amd64,linux/arm64
 
   # ===== 镜像仓库 =====
   # 默认推送到 GitHub Container Registry (GHCR)，配合 GitHub Actions 使用。
