@@ -1,8 +1,16 @@
 import { state, api, registerRemoteHandler } from './store';
 import { $, $$ } from './dom';
 
+const darkMq = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+function resolveTheme(t: string): 'dark' | 'light' {
+    if (t === 'system') return darkMq && darkMq.matches ? 'dark' : 'light';
+    return t === 'light' ? 'light' : 'dark';
+}
+
 export function applyTheme(): void {
-    document.documentElement.setAttribute('data-theme', state.currentTheme);
+    document.documentElement.setAttribute('data-theme', resolveTheme(state.currentTheme));
+    document.documentElement.setAttribute('data-theme-source', state.currentTheme === 'system' ? 'system' : 'manual');
     updateThemeButtons();
 }
 
@@ -64,6 +72,11 @@ export function initTheme(): void {
     $$('.accent-btn').forEach(btn => btn.addEventListener('click', () => setAccent(btn.dataset.color || '#7c8aff')));
     const picker = $<HTMLInputElement>('#accentColorPicker');
     if (picker) picker.addEventListener('input', (e) => setAccent((e.target as HTMLInputElement).value));
+
+    // 跟随系统：OS 主题切换时自动同步（仅当当前为 system）
+    if (darkMq && darkMq.addEventListener) {
+        darkMq.addEventListener('change', () => { if (state.currentTheme === 'system') applyTheme(); });
+    }
 
     applyTheme();
     applyAccentColor();

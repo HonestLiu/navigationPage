@@ -6,7 +6,7 @@ export const api = new Api();
 
 export const state = {
     currentCategory: '常用',
-    currentTheme: 'dark',
+    currentTheme: 'system',
     currentPosition: 'center',
     accentColor: '#7c8aff',
     navItems: [] as NavItem[],
