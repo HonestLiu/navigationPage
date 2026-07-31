@@ -33,8 +33,7 @@ const App = {
         this.applyAccentColor();
         this.renderCategoryTabs();
         this.renderNavItems();
-        this.renderEngines();
-        this.renderEngineDropdown();
+        await this.renderEngines();
         this.applyLayoutPosition();
         this.initClock();
         this.initPomodoro();
@@ -54,6 +53,10 @@ const App = {
         this.initLorem();
         this.initHitokoto();
         this.applyToolsVisibility();
+        // 应用工具区折叠状态（避免依赖不存在的 toolsArrow 元素）
+        const tc = await Storage.get('tools_collapsed');
+        const tsEl = document.getElementById('toolsSection');
+        if (tsEl) tsEl.classList.toggle('collapsed', !!tc);
     },
 
     handleRemoteChange(type, key, data) {
@@ -92,9 +95,7 @@ const App = {
             else if (key === 'wallpaper_history') { this.renderWallpaperHistory(); }
             else if (key === 'tools_collapsed') {
                 const section = document.getElementById('toolsSection');
-                const arrow = document.getElementById('toolsArrow');
-                section.classList.toggle('collapsed', !!data);
-                arrow.classList.toggle('collapsed', !!data);
+                if (section) section.classList.toggle('collapsed', !!data);
             }
         }
     },
@@ -1103,9 +1104,15 @@ const App = {
         reader.onload = async (ev) => {
             try {
                 const data = JSON.parse(ev.target.result);
-                if (confirm('导入将覆盖当前配置？')) {
-                    if (data.navItems) for (const item of data.navItems) await Storage.saveNavItem(item);
-                    if (data.engines) for (const engine of data.engines) await Storage.saveEngine(engine);
+                if (confirm('导入将追加到当前配置？')) {
+                    if (data.navItems) for (const item of data.navItems) {
+                        const { id, sort_order, ...rest } = item;
+                        await Storage.saveNavItem(rest);
+                    }
+                    if (data.engines) for (const engine of data.engines) {
+                        const { id, sort_order, ...rest } = engine;
+                        await Storage.saveEngine(rest);
+                    }
                     await this.refreshNav(); await this.refreshEngines();
                     alert('导入成功！');
                 }
