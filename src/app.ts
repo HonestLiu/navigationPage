@@ -6,7 +6,7 @@ import * as engines from './features/engines';
 import * as nav from './features/nav';
 import * as settings from './features/settings';
 import * as wallpaper from './features/wallpaper';
-import * as airDrop from './features/airDrop';
+import * as airDrop from './features/airdrop';
 import { initHitokoto } from './features/hitokoto';
 import { initTools, expandTool, closeOverlay } from './features/tools';
 import { initNotesView } from './features/tools/notes';
