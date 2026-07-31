@@ -7,7 +7,9 @@ COPY js/ ./js/
 COPY css/ ./css/
 COPY assets/ ./assets/
 COPY index.html ./
-RUN mkdir -p server/uploads server/wallpapers
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && mkdir -p server/uploads server/wallpapers
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:3000/ || exit 1
-CMD ["sh", "-c", "mkdir -p server/uploads server/wallpapers && node server/index.js"]
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["node", "/app/server/index.js"]

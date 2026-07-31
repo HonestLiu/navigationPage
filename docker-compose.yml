@@ -2,12 +2,18 @@
 #
 # ⚠️ 关键：只挂载「数据」相关的子路径。
 #    绝不要把 /app 或 /app/server 整个挂上去 —— 那样会遮掉镜像里的
-#    server/index.js，容器启动报：
-#    Error: Cannot find module '/app/server/index.js'
+#    server/index.js，容器启动会直接退出并提示「/app/server/index.js 不存在」。
+#
+# ⚠️ 关于镜像来源：
+#    默认从 GitHub Container Registry 拉取 ghcr.io/honestliu/navigationpage:latest
+#    （由本仓库的 GitHub Action 多架构构建推送）。
+#    - 若 GitHub 仓库是【私有】的，GHCR 包也是私有的：在部署机上先
+#      `docker login ghcr.io`（用有 read:packages 权限的 PAT）再拉。
+#    - 想脱离 GitHub 直接本地构建，把 `image:` 那行换成 `build: .` 即可。
 #
 services:
   mypage:
-    # 用 GitHub Actions 推到 GHCR 的镜像
+    # 用 GitHub Actions 推到 GHCR 的镜像（仓库名已自动转小写）
     image: ghcr.io/honestliu/navigationpage:latest
     # 想本地直接构建镜像，把上面那行换成：build: .
     container_name: mypagehome
@@ -17,7 +23,9 @@ services:
     environment:
       - PORT=3000
     volumes:
-      # 导航/配置数据库（文件，首次运行会自动写入默认值）
+      # 导航/配置数据库。注意：宿主机上此路径不存在时，Docker 会把它建成
+      # 一个【目录】；应用内已做兼容（自动改用 data/data.json），数据照常持久化，
+      # 不影响运行。若想让宿主机上显示为真正的 data.json 文件，部署前先 `touch data.json`。
       - ./data.json:/app/server/data.json
       # 文件快传(Airdrop)上传目录
       - ./uploads:/app/server/uploads
