@@ -7,8 +7,8 @@ export async function renderEngines(): Promise<void> {
 }
 
 export function renderEngineDropdown(): void {
-    const dropdown = $('#engineDropdown');
-    if (!dropdown) return;
+    const Dropdown = $('#engineDropdown');
+    if (!Dropdown) return;
     const currentEngine = state.engines.find(e => e.id === state.currentEngine);
     if (currentEngine) {
         const icon = $('#engineIcon');
@@ -17,19 +17,24 @@ export function renderEngineDropdown(): void {
             (icon as HTMLElement).style.cssText = `font-size:20px;color:${currentEngine.color};`;
         }
     }
-    dropdown.innerHTML = state.engines.map(engine =>
+    // 当前选中的引擎「置顶」，其余保持原顺序
+    const ordered = [
+        ...state.engines.filter(e => e.id === state.currentEngine),
+        ...state.engines.filter(e => e.id !== state.currentEngine),
+    ];
+    Dropdown.innerHTML = ordered.map(engine =>
         `<button class="engine-option ${engine.id === state.currentEngine ? 'selected' : ''}" data-id="${escHtml(engine.id)}">
             <i class="${escHtml(engine.icon)}" style="color:${escHtml(engine.color)};"></i>
             <span>${escHtml(engine.name)}</span>
         </button>`
     ).join('');
-    dropdown.querySelectorAll('.engine-option').forEach(btn => {
+    Dropdown.querySelectorAll('.engine-option').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const id = (btn as HTMLElement).dataset.id!;
             state.currentEngine = id;
             selectEngine(id);
-            dropdown.classList.remove('active');
+            Dropdown.classList.remove('active');
         });
     });
 }

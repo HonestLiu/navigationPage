@@ -52,6 +52,20 @@ async function loadWallpaper(): Promise<void> {
     }
 }
 
+function updateScrimLabel(s: number): void {
+    const el = $('#scrimVal');
+    if (el) el.textContent = Math.round(s * 100) + '%';
+}
+
+async function loadScrimStrength(): Promise<void> {
+    const val = await api.getKv('wallpaper_scrim');
+    const s = (typeof val === 'number' && val >= 0 && val <= 1) ? val : 0.35;
+    document.documentElement.style.setProperty('--scrim-strength', String(s));
+    const slider = $<HTMLInputElement>('#scrimStrength');
+    if (slider) slider.value = String(s);
+    updateScrimLabel(s);
+}
+
 async function updateWallpaperPreview(): Promise<void> {
     const wp = await api.getKv('wallpaper');
     const preview = $<HTMLImageElement>('#currentWallpaperPreview');
@@ -63,14 +77,16 @@ async function updateWallpaperPreview(): Promise<void> {
 
 async function fetchBingWallpaper(idx: number): Promise<void> {
     try {
-        const res = await fetch(`https://cn.bing.com/HPImageArchive.aspx?format=js&idx=${idx}&n=1&mkt=zh-CN`);
+        const res = await fetch(`/api/wallpaper/bing?idx=${idx}&n=1`);
+        if (!res.ok) throw new Error('bad status ' + res.status);
         const data = await res.json();
-        const url = 'https://cn.bing.com' + data.images[0].url.split('&')[0];
+        if (!data || !data.url) throw new Error('no url');
+        const url = data.url;
         applyWallpaperStyle(url);
         detectWallpaperBrightness(url);
         await api.setKv('wallpaper', { url, timestamp: Date.now() });
         const hist = await api.getKv('wallpaper_history') || [];
-        hist.unshift({ url, name: data.images[0].copyright });
+        hist.unshift({ url, name: data.copyright });
         if (hist.length > 12) hist.pop();
         await api.setKv('wallpaper_history', hist);
         await updateWallpaperPreview();
@@ -155,6 +171,7 @@ export function toggleWallpaperPanel(): void {
 
 export function initWallpaper(): void {
     loadWallpaper();
+    loadScrimStrength();
     updateWallpaperPreview();
     renderWallpaperHistory();
 
@@ -165,6 +182,14 @@ export function initWallpaper(): void {
     $('#wallpaperFileInput')?.addEventListener('change', (e) => uploadWallpaper(e));
     $('#randomBing')?.addEventListener('click', () => fetchRandomBingWallpaper());
     $('#resetWallpaper')?.addEventListener('click', () => resetWallpaper());
+
+    const scrimSlider = $<HTMLInputElement>('#scrimStrength');
+    scrimSlider?.addEventListener('input', (e) => {
+        const s = parseFloat((e.target as HTMLInputElement).value);
+        document.documentElement.style.setProperty('--scrim-strength', String(s));
+        updateScrimLabel(s);
+        api.setKv('wallpaper_scrim', s);
+    });
 
     registerRemoteHandler((type, key, data) => {
         if (type === 'kv' && key === 'wallpaper') {

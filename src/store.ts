@@ -1,5 +1,5 @@
 import { Api } from './api';
-import type { NavItem, Engine, Todo, Note, ClipboardItem, DnsEntry, AirdropFile, ToolConfig } from './types';
+import type { NavItem, Engine, Todo, Note, ClipboardItem, DnsEntry, AirDropFile, ToolConfig } from './types';
 
 // 全局状态：原 App 对象里的可变字段集中到这里，各功能模块共享
 export const api = new Api();
@@ -17,7 +17,7 @@ export const state = {
     notes: [] as Note[],
     currentNoteId: null as number | null,
     clipboardItems: [] as ClipboardItem[],
-    airdropFiles: [] as AirdropFile[],
+    airDropFiles: [] as AirDropFile[],
     currentEngine: 'google',
     toolsConfig: [] as ToolConfig[]
 };
@@ -44,8 +44,8 @@ export function initSSE(): void {
     evtSource.addEventListener('engine_change', (e) => {
         handlers.forEach(h => h('engine_change', '', JSON.parse((e as MessageEvent).data)));
     });
-    evtSource.addEventListener('airdrop_change', (e) => {
-        handlers.forEach(h => h('airdrop_change', '', JSON.parse((e as MessageEvent).data)));
+    evtSource.addEventListener('airDrop_change', (e) => {
+        handlers.forEach(h => h('airDrop_change', '', JSON.parse((e as MessageEvent).data)));
     });
     evtSource.onerror = () => {
         evtSource?.close();

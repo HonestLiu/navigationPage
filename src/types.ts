@@ -43,7 +43,7 @@ export interface DnsEntry {
     note?: string;
 }
 
-export interface AirdropFile {
+export interface AirDropFile {
     id: string;
     name: string;
     size: number;

@@ -1,42 +1,42 @@
 import { registerRemoteHandler } from '../store';
 import { $, escHtml } from '../dom';
-import type { AirdropFile } from '../types';
+import type { AirDropFile } from '../types';
 
-// ===== 空投模块 =====
+// ===== Drop模块 =====
 
-let airdropFiles: AirdropFile[] = [];
-let airdropTimer: number | null = null;
+let airDropFiles: AirDropFile[] = [];
+let airDropTimer: number | null = null;
 
-export function toggleAirdrop(): void {
-    const panel = $('#airdropPanel');
+export function toggleAirDrop(): void {
+    const panel = $('#airDropPanel');
     if (!panel) return;
     panel.classList.toggle('active');
-    if (panel.classList.contains('active')) refreshAirdrop();
+    if (panel.classList.contains('active')) refreshAirDrop();
 }
 
-async function refreshAirdrop(): Promise<void> {
+async function refreshAirDrop(): Promise<void> {
     try {
-        const res = await fetch('/api/airdrop');
-        airdropFiles = await res.json();
-    } catch (e) { airdropFiles = []; }
-    renderAirdropList();
-    startAirdropTimer();
+        const res = await fetch('/api/airDrop');
+        airDropFiles = await res.json();
+    } catch (e) { airDropFiles = []; }
+    renderAirDropList();
+    startAirDropTimer();
 }
 
-function startAirdropTimer(): void {
-    if (airdropTimer) clearInterval(airdropTimer);
-    airdropTimer = window.setInterval(() => {
-        const panel = $('#airdropPanel');
+function startAirDropTimer(): void {
+    if (airDropTimer) clearInterval(airDropTimer);
+    airDropTimer = window.setInterval(() => {
+        const panel = $('#airDropPanel');
         if (!panel || !panel.classList.contains('active')) {
-            if (airdropTimer) clearInterval(airdropTimer);
-            airdropTimer = null;
+            if (airDropTimer) clearInterval(airDropTimer);
+            airDropTimer = null;
             return;
         }
-        renderAirdropList();
+        renderAirDropList();
     }, 1000);
 }
 
-function getAirdropIcon(mime: string): { icon: string; cls: string } {
+function getAirDropIcon(mime: string): { icon: string; cls: string } {
     if (!mime) return { icon: 'fa-file', cls: 'file' };
     if (mime.startsWith('image/')) return { icon: 'fa-image', cls: 'image' };
     if (mime.startsWith('video/')) return { icon: 'fa-video', cls: 'video' };
@@ -62,47 +62,47 @@ function formatRemaining(expiresAt: number): string {
     return `${s}s`;
 }
 
-function renderAirdropList(): void {
-    const list = $('#airdropList');
+function renderAirDropList(): void {
+    const list = $('#airDropList');
     if (!list) return;
     const now = Date.now();
-    const active = airdropFiles.filter(f => f.expiresAt > now);
-    const expired = airdropFiles.filter(f => f.expiresAt <= now);
-    const countEl = $('#airdropCount');
+    const active = airDropFiles.filter(f => f.expiresAt > now);
+    const expired = airDropFiles.filter(f => f.expiresAt <= now);
+    const countEl = $('#airDropCount');
     if (countEl) countEl.textContent = String(active.length);
 
-    if (airdropFiles.length === 0) {
-        list.innerHTML = '<div class="airdrop-empty"><i class="fas fa-cloud-arrow-up"></i>暂无文件，上传一个试试</div>';
+    if (airDropFiles.length === 0) {
+        list.innerHTML = '<div class="airDrop-empty"><i class="fas fa-cloud-arrow-up"></i>暂无文件，上传一个试试</div>';
         return;
     }
 
     let html = '';
     for (const f of active) {
-        const { icon, cls } = getAirdropIcon(f.mime);
+        const { icon, cls } = getAirDropIcon(f.mime);
         const remaining = formatRemaining(f.expiresAt);
         const urgent = (f.expiresAt - now) < 300000;
-        html += `<div class="airdrop-item" data-id="${escHtml(f.id)}">
-            <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
-            <div class="airdrop-item-info">
-                <div class="airdrop-item-name">${escHtml(f.name)}</div>
-                <div class="airdrop-item-meta"><span>${formatSize(f.size)}</span></div>
+        html += `<div class="airDrop-item" data-id="${escHtml(f.id)}">
+            <div class="airDrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
+            <div class="airDrop-item-info">
+                <div class="airDrop-item-name">${escHtml(f.name)}</div>
+                <div class="airDrop-item-meta"><span>${formatSize(f.size)}</span></div>
             </div>
-            <div class="airdrop-item-timer ${urgent ? 'urgent' : ''}">${remaining}</div>
-            <div class="airdrop-item-actions">
+            <div class="airDrop-item-timer ${urgent ? 'urgent' : ''}">${remaining}</div>
+            <div class="airDrop-item-actions">
                 <a class="adl-download" href="${escHtml(f.downloadUrl)}" download="${escHtml(f.name)}" title="下载"><i class="fas fa-download"></i></a>
                 <button class="adl-delete" title="删除"><i class="fas fa-trash"></i></button>
             </div>
         </div>`;
     }
     for (const f of expired) {
-        const { icon, cls } = getAirdropIcon(f.mime);
-        html += `<div class="airdrop-item" style="opacity:0.35;" data-id="${escHtml(f.id)}">
-            <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
-            <div class="airdrop-item-info">
-                <div class="airdrop-item-name" style="text-decoration:line-through;">${escHtml(f.name)}</div>
-                <div class="airdrop-item-meta"><span>已过期</span></div>
+        const { icon, cls } = getAirDropIcon(f.mime);
+        html += `<div class="airDrop-item" style="opacity:0.35;" data-id="${escHtml(f.id)}">
+            <div class="airDrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
+            <div class="airDrop-item-info">
+                <div class="airDrop-item-name" style="text-decoration:line-through;">${escHtml(f.name)}</div>
+                <div class="airDrop-item-meta"><span>已过期</span></div>
             </div>
-            <div class="airdrop-item-actions" style="opacity:1;">
+            <div class="airDrop-item-actions" style="opacity:1;">
                 <button class="adl-delete" title="清除"><i class="fas fa-trash"></i></button>
             </div>
         </div>`;
@@ -112,21 +112,21 @@ function renderAirdropList(): void {
     list.querySelectorAll('.adl-delete').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
-            const id = ((btn as HTMLElement).closest('.airdrop-item') as HTMLElement).dataset.id!;
-            await fetch('/api/airdrop/' + id, { method: 'DELETE' });
-            refreshAirdrop();
+            const id = ((btn as HTMLElement).closest('.airDrop-item') as HTMLElement).dataset.id!;
+            await fetch('/api/airDrop/' + id, { method: 'DELETE' });
+            refreshAirDrop();
         });
     });
 }
 
-async function uploadAirdropFiles(e: Event): Promise<void> {
+async function uploadAirDropFiles(e: Event): Promise<void> {
     const input = e.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     if (!files.length) return;
-    const duration = parseInt(($('#airdropDuration') as HTMLInputElement)?.value || '60');
-    const progress = $('#airdropProgress');
-    const bar = $('#airdropProgressBar');
-    const text = $('#airdropProgressText');
+    const duration = parseInt(($('#airDropDuration') as HTMLInputElement)?.value || '60');
+    const progress = $('#airDropProgress');
+    const bar = $('#airDropProgressBar');
+    const text = $('#airDropProgressText');
 
     for (const file of files) {
         if (progress) progress.style.display = 'flex';
@@ -141,7 +141,7 @@ async function uploadAirdropFiles(e: Event): Promise<void> {
             });
             xhr.addEventListener('load', () => resolve());
             xhr.addEventListener('error', () => reject());
-            xhr.open('POST', '/api/airdrop/upload');
+            xhr.open('POST', '/api/airDrop/upload');
             xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
             xhr.setRequestHeader('X-File-Mime', file.type || 'application/octet-stream');
             xhr.setRequestHeader('X-File-Duration', String(duration));
@@ -150,32 +150,32 @@ async function uploadAirdropFiles(e: Event): Promise<void> {
     }
     if (progress) progress.style.display = 'none';
     input.value = '';
-    refreshAirdrop();
+    refreshAirDrop();
 }
 
-export function initAirdrop(): void {
-    $('#airdropFab')?.addEventListener('click', () => toggleAirdrop());
-    $('#closeAirdrop')?.addEventListener('click', () => toggleAirdrop());
+export function initAirDrop(): void {
+    $('#airDropFab')?.addEventListener('click', () => toggleAirDrop());
+    $('#closeAirDrop')?.addEventListener('click', () => toggleAirDrop());
 
-    const uploadArea = $('#airdropUploadArea');
+    const uploadArea = $('#airDropUploadArea');
     if (uploadArea) {
-        uploadArea.addEventListener('click', () => $('#airdropFileInput')?.click());
+        uploadArea.addEventListener('click', () => $('#airDropFileInput')?.click());
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
         uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-        uploadArea.addEventListener('drop', (e) => {
+        uploadArea.addEventListener('Drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             if (e.dataTransfer && e.dataTransfer.files.length) {
-                uploadAirdropFiles({ target: { files: e.dataTransfer.files } } as unknown as Event);
+                uploadAirDropFiles({ target: { files: e.dataTransfer.files } } as unknown as Event);
             }
         });
     }
-    $('#airdropFileInput')?.addEventListener('change', (e) => uploadAirdropFiles(e));
+    $('#airDropFileInput')?.addEventListener('change', (e) => uploadAirDropFiles(e));
 
     registerRemoteHandler((type) => {
-        if (type === 'airdrop_change') {
-            const panel = $('#airdropPanel');
-            if (panel && panel.classList.contains('active')) refreshAirdrop();
+        if (type === 'airDrop_change') {
+            const panel = $('#airDropPanel');
+            if (panel && panel.classList.contains('active')) refreshAirDrop();
         }
     });
 }

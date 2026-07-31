@@ -1,6 +1,6 @@
 # Navigation Page
 
-一个功能丰富的浏览器主页 / 导航页，自带实用工具集和文件空投功能。
+一个功能丰富的浏览器主页 / 导航页，自带实用工具集和文件Drop功能。
 
 ![Node](https://img.shields.io/badge/node-%3E%3D14-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -46,7 +46,7 @@
 - 上传自定义壁纸
 - 壁纸历史记录，支持恢复
 
-### 空投（文件传输）
+### Drop（文件传输）
 
 - 拖拽或点击上传文件，局域网内其他设备通过链接下载
 - 可设置保留时长（5 分钟 ~ 7 天），到期自动删除
@@ -146,10 +146,10 @@ docker run -d -p 3000:3000 -v ~/nav-data:/data navigation-page
 | GET | `/api/hitokoto` | 获取一言 |
 | POST | `/api/wallpaper/upload` | 上传壁纸 |
 | DELETE | `/api/wallpaper/delete/:file` | 删除壁纸 |
-| GET | `/api/airdrop` | 获取空投文件列表 |
-| POST | `/api/airdrop/upload` | 上传文件到空投 |
-| GET | `/api/airdrop/download/:id` | 下载空投文件 |
-| DELETE | `/api/airdrop/:id` | 删除空投文件 |
+| GET | `/api/airDrop` | 获取Drop文件列表 |
+| POST | `/api/airDrop/upload` | 上传文件到Drop |
+| GET | `/api/airDrop/download/:id` | 下载Drop文件 |
+| DELETE | `/api/airDrop/:id` | 删除Drop文件 |
 | POST | `/api/reset` | 重置所有数据 |
 
 ## 技术栈
@@ -180,7 +180,7 @@ navigationPage/
 │       ├── nav.ts          # 导航项 + 分类 + 右键菜单
 │       ├── settings.ts     # 设置面板 / 导入导出 / 重置
 │       ├── wallpaper.ts    # 壁纸（必应 / 随机 / 上传）
-│       ├── airdrop.ts      # 空投文件传输
+│       ├── airDrop.ts      # Drop文件传输
 │       ├── hitokoto.ts     # 一言
 │       └── tools/          # 16 个工具模块 + index.ts（initTools / expandTool / closeOverlay）
 ├── server/                 # 后端（CommonJS，node server/index.js 启动）
@@ -194,12 +194,12 @@ navigationPage/
 │       ├── nav.js          # 导航项 CRUD + 排序
 │       ├── engines.js      # 搜索引擎 CRUD
 │       ├── wallpaper.js    # 壁纸上传 / 删除
-│       ├── airdrop.js      # 空投上传 / 下载 / 过期清理
+│       ├── airDrop.js      # Drop上传 / 下载 / 过期清理
 │       └── misc.js         # 一言 / Favicon 代理 / 重置
 ├── dist/                   # vite build 产物（构建生成，已在 .gitignore）
 ├── /data/                  # 运行时数据目录（容器挂载点，不在仓库内）
 │   ├── data.json           # 导航/配置数据
-│   ├── uploads/            # 空投文件
+│   ├── uploads/            # Drop文件
 │   └── wallpapers/         # 壁纸文件
 ├── Dockerfile              # 多阶段构建（vite build -> dist）
 ├── package.json / tsconfig.json / vite.config.ts

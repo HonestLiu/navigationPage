@@ -2,7 +2,7 @@ import { $ } from '../../dom';
 
 import { initClock } from './clock';
 import { initPomodoro } from './pomodoro';
-import { initTodo } from './todo';
+import { initTodo, initExpandedTodo } from './todo';
 import { initNotes } from './notes';
 import { initRandom } from './random';
 import { initCounter } from './counter';
@@ -23,7 +23,8 @@ const expanders: Record<string, (container: HTMLElement) => void> = {
     diff: initExpandedDiff,
     json: initExpandedJson,
     regex: initExpandedRegex,
-    notes: initExpandedNotes
+    notes: initExpandedNotes,
+    todo: initExpandedTodo
 };
 
 export async function initTools(): Promise<void> {
@@ -52,6 +53,9 @@ export function expandTool(toolId: string): void {
     const toolTitle = card.querySelector('.tool-header span')?.textContent || '';
     const expanded = document.createElement('div');
     expanded.className = 'tool-card-expanded';
+    const largeTools = ['markdown', 'notes', 'json', 'regex', 'diff'];
+    if (largeTools.includes(toolId)) expanded.classList.add('expanded-large');
+    if (toolId === 'notes') expanded.classList.add('notes-expanded');
     const header = document.createElement('div');
     header.className = 'tool-overlay-header';
     header.innerHTML = `<span class="tool-overlay-title">${toolTitle}</span><button class="tool-overlay-close"><i class="fas fa-times"></i></button>`;
@@ -59,7 +63,7 @@ export function expandTool(toolId: string): void {
 
     const clone = card.querySelector('.tool-body')!.cloneNode(true) as HTMLElement;
     clone.style.flex = '1';
-    clone.style.overflow = 'auto';
+    clone.style.overflow = largeTools.includes(toolId) ? 'hidden' : 'auto';
     expanded.appendChild(clone);
 
     overlay.innerHTML = '';

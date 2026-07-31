@@ -6,7 +6,7 @@ import * as engines from './features/engines';
 import * as nav from './features/nav';
 import * as settings from './features/settings';
 import * as wallpaper from './features/wallpaper';
-import * as airdrop from './features/airdrop';
+import * as airDrop from './features/airDrop';
 import { initHitokoto } from './features/hitokoto';
 import { initTools, expandTool, closeOverlay } from './features/tools';
 import { initNotesView } from './features/tools/notes';
@@ -53,8 +53,8 @@ function bindGlobalEvents(): void {
         if (sp && sp.classList.contains('active') && !sp.contains(t) && !t.closest('#sidebarSettings')) sp.classList.remove('active');
         const wp = $('#wallpaperPanel');
         if (wp && wp.classList.contains('active') && !wp.contains(t) && !t.closest('#wallpaperFab')) wp.classList.remove('active');
-        const ap = $('#airdropPanel');
-        if (ap && ap.classList.contains('active') && !ap.contains(t) && !t.closest('#airdropFab')) ap.classList.remove('active');
+        const ap = $('#airDropPanel');
+        if (ap && ap.classList.contains('active') && !ap.contains(t) && !t.closest('#airDropFab')) ap.classList.remove('active');
 
         // 关闭搜索建议
         if (!t.closest('.search-section')) search.closeSuggestions();
@@ -131,7 +131,7 @@ export async function init(): Promise<void> {
     settings.initSettings();
     settings.applyToolsVisibility();
     wallpaper.initWallpaper();
-    airdrop.initAirdrop();
+    airDrop.initAirDrop();
     initHitokoto();
     await initTools();
 }

@@ -36,7 +36,7 @@
                         <button class="engine-btn" id="engineBtn">
                             <i id="engineIcon" class="fa-brands fa-google" style="font-size:20px;color:#4285f4;"></i>
                         </button>
-                        <div class="engine-dropdown" id="engineDropdown"></div>
+                        <div class="engine-Dropdown" id="engineDropdown"></div>
                     </div>
                     <input type="text" id="searchInput" placeholder="搜索..." autocomplete="off">
                 </div>
@@ -437,14 +437,14 @@
         <i class="fas fa-image"></i>
     </button>
 
-    <!-- 空投按钮 -->
-    <button class="airdrop-fab" id="airdropFab" title="空投">
-        <i class="fas fa-cloud-arrow-up"></i>
+    <!-- Drop按钮 -->
+    <button class="airDrop-fab" id="airDropFab" title="Drop">
+        <i class="fas fa-paper-plane"></i>
     </button>
 
     <!-- 设置面板 -->
     <div class="settings-panel" id="settingsPanel">
-        <div class="settings-backdrop" id="closeSettings"></div>
+        <div class="settings-backDrop" id="closeSettings"></div>
         <div class="settings-modal">
             <div class="settings-header">
                 <div class="settings-header-left">
@@ -733,7 +733,7 @@
                     <div class="icon-upload-area" id="iconUploadArea">
                         <input type="file" id="iconFileInput" accept="image/*" style="display:none">
                         <div class="icon-preview" id="iconPreview">
-                            <i class="fas fa-cloud-arrow-up"></i>
+                            <i class="fas fa-paper-plane"></i>
                         </div>
                         <span class="icon-upload-text">上传自定义图标</span>
                     </div>
@@ -743,6 +743,7 @@
                     <div class="color-input-wrap">
                         <input type="color" id="editColor" value="#6366f1">
                         <span class="color-hex" id="editColorHex">#6366f1</span>
+                        <label class="color-transparent-toggle"><input type="checkbox" id="editColorTransparent"> 透明</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -824,6 +825,14 @@
                     <span>恢复默认</span>
                 </button>
             </div>
+            <div class="scrim-control">
+                <div class="scrim-control-head">
+                    <span>遮罩强度</span>
+                    <span class="scrim-val" id="scrimVal">35%</span>
+                </div>
+                <input type="range" id="scrimStrength" min="0" max="0.9" step="0.05" value="0.35">
+                <p class="scrim-hint">调低可更清晰地看到壁纸，0 表示完全无遮罩</p>
+            </div>
             <div class="wallpaper-history" id="wallpaperHistory">
                 <h4>历史壁纸</h4>
                 <div class="history-grid"></div>
@@ -832,29 +841,29 @@
     </div>
     <input type="file" id="wallpaperFileInput" accept="image/*" style="display: none;">
 
-    <!-- 空投面板 -->
-    <div class="airdrop-panel" id="airdropPanel">
-        <div class="airdrop-header">
-            <div class="airdrop-title">
-                <i class="fas fa-cloud-arrow-up"></i>
-                <h3>空投</h3>
+    <!-- Drop面板 -->
+    <div class="airDrop-panel" id="airDropPanel">
+        <div class="airDrop-header">
+            <div class="airDrop-title">
+                <i class="fas fa-paper-plane"></i>
+                <h3>Drop</h3>
             </div>
-            <button class="close-btn" id="closeAirdrop">
+            <button class="close-btn" id="closeAirDrop">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="airdrop-content">
-            <div class="airdrop-upload-area" id="airdropUploadArea">
-                <input type="file" id="airdropFileInput" multiple style="display:none">
-                <div class="airdrop-upload-icon">
-                    <i class="fas fa-cloud-arrow-up"></i>
+        <div class="airDrop-content">
+            <div class="airDrop-upload-area" id="airDropUploadArea">
+                <input type="file" id="airDropFileInput" multiple style="display:none">
+                <div class="airDrop-upload-icon">
+                    <i class="fas fa-paper-plane"></i>
                 </div>
-                <div class="airdrop-upload-text">点击或拖拽文件到此处上传</div>
-                <div class="airdrop-upload-hint">文件将在选定时间后自动删除</div>
+                <div class="airDrop-upload-text">点击或拖拽文件到此处上传</div>
+                <div class="airDrop-upload-hint">文件将在选定时间后自动删除</div>
             </div>
-            <div class="airdrop-duration-row">
+            <div class="airDrop-duration-row">
                 <label>保留时间</label>
-                <select id="airdropDuration">
+                <select id="airDropDuration">
                     <option value="300">5 分钟</option>
                     <option value="1800">30 分钟</option>
                     <option value="3600" selected>1 小时</option>
@@ -862,15 +871,15 @@
                     <option value="604800">7 天</option>
                 </select>
             </div>
-            <div class="airdrop-progress" id="airdropProgress" style="display:none;">
-                <div class="airdrop-progress-bar" id="airdropProgressBar"></div>
-                <span id="airdropProgressText">上传中...</span>
+            <div class="airDrop-progress" id="airDropProgress" style="display:none;">
+                <div class="airDrop-progress-bar" id="airDropProgressBar"></div>
+                <span id="airDropProgressText">上传中...</span>
             </div>
-            <div class="airdrop-list-header">
+            <div class="airDrop-list-header">
                 <span>文件列表</span>
-                <span class="airdrop-count" id="airdropCount">0</span>
+                <span class="airDrop-count" id="airDropCount">0</span>
             </div>
-            <div class="airdrop-list" id="airdropList"></div>
+            <div class="airDrop-list" id="airDropList"></div>
         </div>
     </div>
 

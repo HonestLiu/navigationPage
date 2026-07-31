@@ -64,8 +64,8 @@ const App = {
             this.refreshNav();
         } else if (type === 'engine_change') {
             this.refreshEngines();
-        } else if (type === 'airdrop_change') {
-            if (document.getElementById('airdropPanel').classList.contains('active')) this.refreshAirdrop();
+        } else if (type === 'airDrop_change') {
+            if (document.getElementById('airDropPanel').classList.contains('active')) this.refreshAirDrop();
         } else if (type === 'kv') {
             if (key === 'current_category') { this.currentCategory = data; this.renderCategoryTabs(); this.renderNavItems(); }
             else if (key === 'layout_position') { this.currentPosition = data; this.applyLayoutPosition(); }
@@ -132,18 +132,18 @@ const App = {
             document.getElementById('engineDropdown').classList.toggle('active');
         });
 
-        document.getElementById('airdropFab').addEventListener('click', () => this.toggleAirdrop());
-        document.getElementById('closeAirdrop').addEventListener('click', () => this.toggleAirdrop());
+        document.getElementById('airDropFab').addEventListener('click', () => this.toggleAirDrop());
+        document.getElementById('closeAirDrop').addEventListener('click', () => this.toggleAirDrop());
 
-        document.getElementById('airdropUploadArea').addEventListener('click', () => document.getElementById('airdropFileInput').click());
-        document.getElementById('airdropFileInput').addEventListener('change', (e) => this.uploadAirdropFiles(e));
+        document.getElementById('airDropUploadArea').addEventListener('click', () => document.getElementById('airDropFileInput').click());
+        document.getElementById('airDropFileInput').addEventListener('change', (e) => this.uploadAirDropFiles(e));
 
-        const uploadArea = document.getElementById('airdropUploadArea');
+        const uploadArea = document.getElementById('airDropUploadArea');
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
         uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-        uploadArea.addEventListener('drop', (e) => {
+        uploadArea.addEventListener('Drop', (e) => {
             e.preventDefault(); uploadArea.classList.remove('dragover');
-            if (e.dataTransfer.files.length) this.uploadAirdropFiles({ target: { files: e.dataTransfer.files } });
+            if (e.dataTransfer.files.length) this.uploadAirDropFiles({ target: { files: e.dataTransfer.files } });
         });
 
         document.addEventListener('click', (e) => {
@@ -154,8 +154,8 @@ const App = {
             const wp = document.getElementById('wallpaperPanel');
             if (wp.classList.contains('active') && !wp.contains(e.target) && !e.target.closest('#wallpaperFab'))
                 wp.classList.remove('active');
-            const ap = document.getElementById('airdropPanel');
-            if (ap.classList.contains('active') && !ap.contains(e.target) && !e.target.closest('#airdropFab'))
+            const ap = document.getElementById('airDropPanel');
+            if (ap.classList.contains('active') && !ap.contains(e.target) && !e.target.closest('#airDropFab'))
                 ap.classList.remove('active');
             if (!e.target.closest('.search-section')) this.closeSuggestions();
 
@@ -304,7 +304,7 @@ const App = {
     },
 
     renderEngineDropdown() {
-        const dropdown = document.getElementById('engineDropdown');
+        const Dropdown = document.getElementById('engineDropdown');
         const currentId = this._cache_current_engine || 'google';
         const currentEngine = this.engines.find(e => e.id === currentId);
         if (currentEngine) {
@@ -312,18 +312,18 @@ const App = {
             icon.className = currentEngine.icon;
             icon.style.cssText = `font-size:20px;color:${currentEngine.color};`;
         }
-        dropdown.innerHTML = this.engines.map(engine => `
+        Dropdown.innerHTML = this.engines.map(engine => `
             <button class="engine-option ${engine.id === currentId ? 'selected' : ''}" data-id="${_escHtml(engine.id)}">
                 <i class="${_escHtml(engine.icon)}" style="color: ${_escHtml(engine.color)};"></i>
                 <span>${_escHtml(engine.name)}</span>
             </button>
         `).join('');
-        dropdown.querySelectorAll('.engine-option').forEach(btn => {
+        Dropdown.querySelectorAll('.engine-option').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this._cache_current_engine = btn.dataset.id;
                 this.selectEngine(btn.dataset.id);
-                dropdown.classList.remove('active');
+                Dropdown.classList.remove('active');
             });
         });
     },
@@ -787,7 +787,7 @@ const App = {
             row.addEventListener('dragstart', (e) => { draggedCat = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             row.addEventListener('dragover', (e) => { e.preventDefault(); if (row !== draggedCat) row.classList.add('drag-over'); });
             row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-            row.addEventListener('drop', async (e) => {
+            row.addEventListener('Drop', async (e) => {
                 e.preventDefault(); row.classList.remove('drag-over');
                 if (draggedCat && row !== draggedCat) {
                     const cats = [...categories];
@@ -834,7 +834,7 @@ const App = {
             row.addEventListener('dragstart', (e) => { draggedTool = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             row.addEventListener('dragover', (e) => { e.preventDefault(); if (row !== draggedTool) row.classList.add('drag-over'); });
             row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-            row.addEventListener('drop', async (e) => {
+            row.addEventListener('Drop', async (e) => {
                 e.preventDefault(); row.classList.remove('drag-over');
                 if (draggedTool && row !== draggedTool) {
                     const cfg = await Storage.get('tools_config') || [];
@@ -1897,37 +1897,37 @@ const App = {
         document.getElementById('loremOutput').value = result.join('\n\n');
     },
 
-    // === 空投 ===
-    airdropFiles: [],
-    airdropTimer: null,
+    // === Drop ===
+    airDropFiles: [],
+    airDropTimer: null,
 
-    toggleAirdrop() {
-        const panel = document.getElementById('airdropPanel');
+    toggleAirDrop() {
+        const panel = document.getElementById('airDropPanel');
         panel.classList.toggle('active');
         if (panel.classList.contains('active')) {
-            this.refreshAirdrop();
+            this.refreshAirDrop();
         }
     },
 
-    async refreshAirdrop() {
+    async refreshAirDrop() {
         try {
-            const res = await fetch('/api/airdrop');
-            this.airdropFiles = await res.json();
-        } catch (e) { this.airdropFiles = []; }
-        this.renderAirdropList();
-        this.startAirdropTimer();
+            const res = await fetch('/api/airDrop');
+            this.airDropFiles = await res.json();
+        } catch (e) { this.airDropFiles = []; }
+        this.renderAirDropList();
+        this.startAirDropTimer();
     },
 
-    startAirdropTimer() {
-        if (this.airdropTimer) clearInterval(this.airdropTimer);
-        this.airdropTimer = this._addInterval(() => {
-            const panel = document.getElementById('airdropPanel');
-            if (!panel.classList.contains('active')) { clearInterval(this.airdropTimer); this._intervals = this._intervals.filter(id => id !== this.airdropTimer); this.airdropTimer = null; return; }
-            this.renderAirdropList();
+    startAirDropTimer() {
+        if (this.airDropTimer) clearInterval(this.airDropTimer);
+        this.airDropTimer = this._addInterval(() => {
+            const panel = document.getElementById('airDropPanel');
+            if (!panel.classList.contains('active')) { clearInterval(this.airDropTimer); this._intervals = this._intervals.filter(id => id !== this.airDropTimer); this.airDropTimer = null; return; }
+            this.renderAirDropList();
         }, 1000);
     },
 
-    getAirdropIcon(mime) {
+    getAirDropIcon(mime) {
         if (!mime) return { icon: 'fa-file', cls: 'file' };
         if (mime.startsWith('image/')) return { icon: 'fa-image', cls: 'image' };
         if (mime.startsWith('video/')) return { icon: 'fa-video', cls: 'video' };
@@ -1953,31 +1953,31 @@ const App = {
         return `${s}s`;
     },
 
-    renderAirdropList() {
-        const list = document.getElementById('airdropList');
+    renderAirDropList() {
+        const list = document.getElementById('airDropList');
         const now = Date.now();
-        const active = this.airdropFiles.filter(f => f.expiresAt > now);
-        const expired = this.airdropFiles.filter(f => f.expiresAt <= now);
-        document.getElementById('airdropCount').textContent = active.length;
+        const active = this.airDropFiles.filter(f => f.expiresAt > now);
+        const expired = this.airDropFiles.filter(f => f.expiresAt <= now);
+        document.getElementById('airDropCount').textContent = active.length;
 
-        if (this.airdropFiles.length === 0) {
-            list.innerHTML = '<div class="airdrop-empty"><i class="fas fa-cloud-arrow-up"></i>暂无文件，上传一个试试</div>';
+        if (this.airDropFiles.length === 0) {
+            list.innerHTML = '<div class="airDrop-empty"><i class="fas fa-cloud-arrow-up"></i>暂无文件，上传一个试试</div>';
             return;
         }
 
         let html = '';
         for (const f of active) {
-            const { icon, cls } = this.getAirdropIcon(f.mime);
+            const { icon, cls } = this.getAirDropIcon(f.mime);
             const remaining = this.formatRemaining(f.expiresAt);
             const urgent = (f.expiresAt - now) < 300000;
-            html += `<div class="airdrop-item" data-id="${f.id}">
-                <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
-                <div class="airdrop-item-info">
-                    <div class="airdrop-item-name">${_escHtml(f.name)}</div>
-                    <div class="airdrop-item-meta"><span>${this.formatSize(f.size)}</span></div>
+            html += `<div class="airDrop-item" data-id="${f.id}">
+                <div class="airDrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
+                <div class="airDrop-item-info">
+                    <div class="airDrop-item-name">${_escHtml(f.name)}</div>
+                    <div class="airDrop-item-meta"><span>${this.formatSize(f.size)}</span></div>
                 </div>
-                <div class="airdrop-item-timer ${urgent ? 'urgent' : ''}">${remaining}</div>
-                <div class="airdrop-item-actions">
+                <div class="airDrop-item-timer ${urgent ? 'urgent' : ''}">${remaining}</div>
+                <div class="airDrop-item-actions">
                     <a class="adl-download" href="${f.downloadUrl}" download="${_escHtml(f.name)}" title="下载"><i class="fas fa-download"></i></a>
                     <button class="adl-delete" title="删除"><i class="fas fa-trash"></i></button>
                 </div>
@@ -1985,14 +1985,14 @@ const App = {
         }
 
         for (const f of expired) {
-            const { icon, cls } = this.getAirdropIcon(f.mime);
-            html += `<div class="airdrop-item" style="opacity:0.35;" data-id="${f.id}">
-                <div class="airdrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
-                <div class="airdrop-item-info">
-                    <div class="airdrop-item-name" style="text-decoration:line-through;">${_escHtml(f.name)}</div>
-                    <div class="airdrop-item-meta"><span>已过期</span></div>
+            const { icon, cls } = this.getAirDropIcon(f.mime);
+            html += `<div class="airDrop-item" style="opacity:0.35;" data-id="${f.id}">
+                <div class="airDrop-item-icon ${cls}"><i class="fas ${icon}"></i></div>
+                <div class="airDrop-item-info">
+                    <div class="airDrop-item-name" style="text-decoration:line-through;">${_escHtml(f.name)}</div>
+                    <div class="airDrop-item-meta"><span>已过期</span></div>
                 </div>
-                <div class="airdrop-item-actions" style="opacity:1;">
+                <div class="airDrop-item-actions" style="opacity:1;">
                     <button class="adl-delete" title="清除"><i class="fas fa-trash"></i></button>
                 </div>
             </div>`;
@@ -2003,20 +2003,20 @@ const App = {
         list.querySelectorAll('.adl-delete').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                const id = btn.closest('.airdrop-item').dataset.id;
-                await fetch('/api/airdrop/' + id, { method: 'DELETE' });
-                this.refreshAirdrop();
+                const id = btn.closest('.airDrop-item').dataset.id;
+                await fetch('/api/airDrop/' + id, { method: 'DELETE' });
+                this.refreshAirDrop();
             });
         });
     },
 
-    async uploadAirdropFiles(e) {
+    async uploadAirDropFiles(e) {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-        const duration = parseInt(document.getElementById('airdropDuration').value);
-        const progress = document.getElementById('airdropProgress');
-        const bar = document.getElementById('airdropProgressBar');
-        const text = document.getElementById('airdropProgressText');
+        const duration = parseInt(document.getElementById('airDropDuration').value);
+        const progress = document.getElementById('airDropProgress');
+        const bar = document.getElementById('airDropProgressBar');
+        const text = document.getElementById('airDropProgressText');
 
         for (const file of files) {
             progress.style.display = 'flex';
@@ -2031,7 +2031,7 @@ const App = {
                 });
                 xhr.addEventListener('load', () => resolve());
                 xhr.addEventListener('error', () => reject());
-                xhr.open('POST', '/api/airdrop/upload');
+                xhr.open('POST', '/api/airDrop/upload');
                 xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
                 xhr.setRequestHeader('X-File-Mime', file.type || 'application/octet-stream');
                 xhr.setRequestHeader('X-File-Duration', duration);
@@ -2041,7 +2041,7 @@ const App = {
 
         progress.style.display = 'none';
         e.target.value = '';
-        this.refreshAirdrop();
+        this.refreshAirDrop();
     }
 };
 

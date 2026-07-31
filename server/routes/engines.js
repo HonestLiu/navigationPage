@@ -1,6 +1,7 @@
 'use strict';
 
-const { getDb, saveDB, broadcast } = require('../db');
+const { getDb, saveDB } = require('../db');
+const { broadcast } = require('../sse');
 
 module.exports = function registerEngines(app) {
     app.get('/api/engines', (req, res) => {

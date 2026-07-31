@@ -99,8 +99,28 @@ export function openNavModal(item?: NavItem): void {
     const idEl = $<HTMLInputElement>('#editId'); if (idEl) idEl.value = item ? String(item.id) : '';
     const nameEl = $<HTMLInputElement>('#editName'); if (nameEl) nameEl.value = item ? item.name : '';
     const urlEl = $<HTMLInputElement>('#editUrl'); if (urlEl) urlEl.value = item ? item.url : '';
-    const colorEl = $<HTMLInputElement>('#editColor'); if (colorEl) colorEl.value = item ? item.color : '#6366f1';
-    const colorHexEl = $('#editColorHex'); if (colorHexEl) colorHexEl.textContent = item ? item.color : '#6366f1';
+    const colorEl = $<HTMLInputElement>('#editColor');
+    const colorHexEl = $('#editColorHex');
+    const transparentEl = $<HTMLInputElement>('#editColorTransparent');
+    const colorWrap = colorEl?.closest('.color-input-wrap');
+    const isTransparent = !!item && (!item.color || item.color === 'transparent' || !/^#[0-9a-fA-F]{6}$/.test(item.color));
+    if (transparentEl) transparentEl.checked = isTransparent;
+    if (colorEl) {
+        const validHex = item && /^#[0-9a-fA-F]{6}$/.test(item.color) ? item.color : '#6366f1';
+        try { colorEl.value = validHex; } catch { colorEl.value = '#6366f1'; }
+    }
+    if (colorHexEl) colorHexEl.textContent = item ? (item.color || 'transparent') : '#6366f1';
+    colorWrap?.classList.toggle('is-transparent', isTransparent);
+    if (colorEl) colorEl.oninput = () => {
+        if (transparentEl) transparentEl.checked = false;
+        if (colorHexEl) colorHexEl.textContent = colorEl.value;
+        colorWrap?.classList.remove('is-transparent');
+    };
+    if (transparentEl) transparentEl.onchange = () => {
+        const t = transparentEl.checked;
+        if (colorHexEl) colorHexEl.textContent = t ? 'transparent' : (colorEl?.value || '#6366f1');
+        colorWrap?.classList.toggle('is-transparent', t);
+    };
     const sel = $<HTMLSelectElement>('#editCategory');
     const order = state.categoryOrder || [];
     const catsFromItems = [...new Set(state.navItems.map(i => i.category || '常用'))];
@@ -145,7 +165,7 @@ export async function saveNavItem(e: Event): Promise<void> {
         name: $<HTMLInputElement>('#editName')!.value,
         url: $<HTMLInputElement>('#editUrl')!.value,
         icon: selectedIcon,
-        color: $<HTMLInputElement>('#editColor')!.value,
+        color: $<HTMLInputElement>('#editColorTransparent')?.checked ? 'transparent' : $<HTMLInputElement>('#editColor')!.value,
         category: $<HTMLSelectElement>('#editCategory')!.value
     };
     if (id) item.id = parseInt(id);

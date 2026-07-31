@@ -81,7 +81,7 @@ function bindDragSort(list: HTMLElement, rowSel: string, handleSel: string, onDr
         row.addEventListener('dragstart', (e) => { dragged = row as HTMLElement; row.classList.add('dragging'); (e as DragEvent).dataTransfer!.effectAllowed = 'move'; });
         row.addEventListener('dragover', (e) => { e.preventDefault(); if (row !== dragged) row.classList.add('drag-over'); });
         row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-        row.addEventListener('drop', async (e) => {
+        row.addEventListener('drop', (e) => {
             e.preventDefault(); row.classList.remove('drag-over');
             if (dragged && row !== dragged) {
                 const items = Array.from(list.querySelectorAll(rowSel)) as HTMLElement[];

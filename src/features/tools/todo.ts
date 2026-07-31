@@ -4,14 +4,25 @@ import type { Todo } from '../../types';
 
 // ===== 工具：待办 =====
 
-function renderTodos(): void {
-    const list = $('#todoList');
-    const count = $('#todoCount');
+function todoHtml(list: Todo[]): string {
+    return list.map(t => `<div class="todo-item"><div class="todo-checkbox ${t.done ? 'checked' : ''}" data-id="${t.id}"></div><span class="todo-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span><button class="todo-delete" data-id="${t.id}"><i class="fas fa-times"></i></button></div>`).join('');
+}
+
+// 在指定作用域内渲染并绑定（支持卡片视图与展开浮层克隆体）
+function renderInto(root: ParentNode): void {
+    const list = root.querySelector('#todoList');
+    const count = root.querySelector('#todoCount');
     if (!list) return;
     if (count) count.textContent = String(state.todos.filter(t => !t.done).length);
-    list.innerHTML = state.todos.map(t => `<div class="todo-item"><div class="todo-checkbox ${t.done ? 'checked' : ''}" data-id="${t.id}"></div><span class="todo-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span><button class="todo-delete" data-id="${t.id}"><i class="fas fa-times"></i></button></div>`).join('');
+    list.innerHTML = todoHtml(state.todos);
     list.querySelectorAll('.todo-checkbox').forEach(cb => cb.addEventListener('click', () => toggleTodo(parseInt((cb as HTMLElement).dataset.id!))));
     list.querySelectorAll('.todo-delete').forEach(btn => btn.addEventListener('click', () => deleteTodo(parseInt((btn as HTMLElement).dataset.id!))));
+}
+
+function renderTodos(): void {
+    renderInto(document);
+    const overlay = $('#toolOverlay');
+    if (overlay && overlay.classList.contains('active')) renderInto(overlay);
 }
 
 async function toggleTodo(id: number): Promise<void> {
@@ -25,8 +36,8 @@ async function deleteTodo(id: number): Promise<void> {
     renderTodos();
 }
 
-async function addTodo(): Promise<void> {
-    const input = $<HTMLInputElement>('#todoInput');
+async function addTodo(inputEl?: HTMLInputElement): Promise<void> {
+    const input = inputEl || $<HTMLInputElement>('#todoInput');
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
@@ -45,4 +56,12 @@ export async function initTodo(): Promise<void> {
     registerRemoteHandler((type, key, data) => {
         if (type === 'kv' && key === 'todo_list') { state.todos = data || []; renderTodos(); }
     });
+}
+
+// 工具展开浮层中使用：克隆体无事件监听且有重复 id，需在浮层作用域内重新渲染并绑定
+export function initExpandedTodo(container: HTMLElement): void {
+    renderInto(container);
+    const input = container.querySelector('#todoInput') as HTMLInputElement | null;
+    input?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTodo(input); });
+    container.querySelector('#todoAddBtn')?.addEventListener('click', () => addTodo(input || undefined));
 }

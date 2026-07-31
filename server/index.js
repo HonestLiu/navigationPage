@@ -24,7 +24,7 @@ require('./routes/kv')(app);
 require('./routes/nav')(app);
 require('./routes/engines')(app);
 require('./routes/wallpaper')(app);
-require('./routes/airdrop')(app);
+require('./routes/airDrop')(app);
 require('./routes/misc')(app);
 
 // SPA 回退：非 API、非静态资源都返回 index.html

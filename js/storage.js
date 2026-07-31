@@ -26,8 +26,8 @@ const Storage = {
         evtSource.addEventListener('engine_change', (e) => {
             this._notify('engine_change', null, JSON.parse(e.data));
         });
-        evtSource.addEventListener('airdrop_change', (e) => {
-            this._notify('airdrop_change', null, JSON.parse(e.data));
+        evtSource.addEventListener('airDrop_change', (e) => {
+            this._notify('airDrop_change', null, JSON.parse(e.data));
         });
         evtSource.onerror = () => {
             evtSource.close();
