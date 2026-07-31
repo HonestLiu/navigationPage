@@ -188,8 +188,9 @@ textarea { resize: vertical; }
    ============================================================ */
 .sidebar {
   position: fixed;
-  top: 14px;
+  top: 50%;
   left: 14px;
+  transform: translateY(-50%);
   width: var(--sidebar-w);
   border-radius: 22px;
   padding: 10px 0;
