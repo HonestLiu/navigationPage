@@ -497,6 +497,11 @@ function startServer(port) {
         for (const name of Object.keys(nets)) {
             for (const net of nets[name]) { if (net.family === 'IPv4' && !net.internal) console.log(`  → Network: http://${net.address}:${port}`); }
         }
+        console.log(`\n  Data storage (数据写入位置):`);
+        console.log(`    DATA_DIR   = ${DATA_DIR}`);
+        console.log(`    DB         = ${DB_PATH}`);
+        console.log(`    uploads    = ${UPLOAD_DIR}`);
+        console.log(`    wallpapers = ${WALLPAPER_DIR}`);
         console.log();
     });
     server.on('error', (err) => {

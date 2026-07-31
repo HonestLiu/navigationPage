@@ -11,6 +11,6 @@ COPY index.html ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && mkdir -p /data
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:3000/ || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD node -e "require('http').get('http://127.0.0.1:3000/',function(r){process.exit(r.statusCode===200?0:1)}).on('error',function(){process.exit(1)})"
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "/app/server/index.js"]
