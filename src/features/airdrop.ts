@@ -165,8 +165,9 @@ export function initAirDrop(): void {
         uploadArea.addEventListener('Drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
-            if (e.dataTransfer && e.dataTransfer.files.length) {
-                uploadAirDropFiles({ target: { files: e.dataTransfer.files } } as unknown as Event);
+            const dt = (e as DragEvent).dataTransfer;
+            if (dt && dt.files.length) {
+                uploadAirDropFiles({ target: { files: dt.files } } as unknown as Event);
             }
         });
     }

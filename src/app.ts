@@ -1,4 +1,4 @@
-import { state, api } from './store';
+import { state, api, isExtension, DEFAULT_ENGINES, DEFAULT_NAV_ITEMS, DEFAULT_CATEGORY_ORDER } from './store';
 import { $, $$, escHtml } from './dom';
 import * as theme from './theme';
 import * as search from './features/search';
@@ -96,6 +96,12 @@ function bindGlobalEvents(): void {
 }
 
 export async function init(): Promise<void> {
+    // 扩展版移除「文件互传（Drop）」入口与面板
+    if (isExtension) {
+        document.getElementById('airDropFab')?.remove();
+        document.getElementById('airDropPanel')?.remove();
+    }
+
     // 加载持久化状态
     state.currentCategory = (await api.getKv('current_category')) || '常用';
     state.currentTheme = (await api.getKv('theme')) || 'dark';
@@ -106,6 +112,42 @@ export async function init(): Promise<void> {
     state.navItems = await api.getNavItems();
     state.engines = await api.getEngines();
     state.currentEngine = (await api.getKv('current_engine')) || 'google';
+
+    // 确保默认导航与搜索引擎存在（按 id 补全，不覆盖用户已添加/修改的内容）
+    const existingNavIds = new Set(state.navItems.map(i => i.id));
+    let navChanged = false;
+    for (const item of DEFAULT_NAV_ITEMS) {
+        if (!existingNavIds.has(item.id)) { await api.saveNavItem(item); navChanged = true; }
+    }
+    if (navChanged) state.navItems = await api.getNavItems();
+
+    const norm = (s: string) => (s || '').trim().toLowerCase();
+    const existingEngineKeys = new Set<string>();
+    const cleanedEngines = state.engines.filter((e: any) => {
+        const idKey = norm(e.id);
+        const nameKey = norm(e.name);
+        const urlKey = norm(e.url);
+        if ((idKey && existingEngineKeys.has(idKey)) || (nameKey && existingEngineKeys.has(nameKey)) || (urlKey && existingEngineKeys.has(urlKey))) return false;
+        if (idKey) existingEngineKeys.add(idKey);
+        if (nameKey) existingEngineKeys.add(nameKey);
+        if (urlKey) existingEngineKeys.add(urlKey);
+        return true;
+    });
+    let engineChanged = cleanedEngines.length !== state.engines.length;
+    for (const engine of DEFAULT_ENGINES) {
+        const present = cleanedEngines.some((e: any) =>
+            norm(e.id) === norm(engine.id) || norm(e.name) === norm(engine.name) || norm(e.url) === norm(engine.url));
+        if (!present) { cleanedEngines.push(engine); engineChanged = true; }
+    }
+    if (engineChanged) {
+        await api.setEngines(cleanedEngines);
+        state.engines = cleanedEngines.slice();
+    }
+
+    if (state.categoryOrder.length === 0) {
+        await api.setKv('category_order', DEFAULT_CATEGORY_ORDER);
+        state.categoryOrder = DEFAULT_CATEGORY_ORDER.slice();
+    }
     state.toolsConfig = (await api.getKv('tools_config')) || [];
     // 首次运行播种默认工具配置（全部启用），避免设置里工具列表为空、主视图工具被隐藏
     if (state.toolsConfig.length === 0) {
@@ -131,7 +173,7 @@ export async function init(): Promise<void> {
     settings.initSettings();
     settings.applyToolsVisibility();
     wallpaper.initWallpaper();
-    airDrop.initAirDrop();
+    if (!isExtension) airDrop.initAirDrop();
     initHitokoto();
     await initTools();
 }

@@ -21,6 +21,7 @@ export function updateThemeButtons(): void {
 export async function setTheme(theme: string): Promise<void> {
     state.currentTheme = theme;
     await api.setKv('theme', theme);
+    try { localStorage.setItem('mp_theme', theme); } catch (e) {}
     applyTheme();
 }
 
@@ -64,6 +65,7 @@ export function updateAccentButtons(): void {
 export async function setAccent(color: string): Promise<void> {
     state.accentColor = color;
     await api.setKv('accent_color', color);
+    try { localStorage.setItem('mp_accent', color); } catch (e) {}
     applyAccentColor();
 }
 

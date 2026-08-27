@@ -280,7 +280,8 @@ export async function importConfig(e: Event): Promise<void> {
 export async function resetData(): Promise<void> {
     if (!confirm('确定重置？这将清除所有自定义数据。')) return;
     try {
-        await fetch('/api/reset', { method: 'POST' });
+        await api.resetAll();
+        try { localStorage.removeItem('mp_theme'); localStorage.removeItem('mp_accent'); } catch (e) {}
         location.reload();
     } catch (e) { alert('重置失败'); }
 }

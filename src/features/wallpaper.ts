@@ -1,4 +1,4 @@
-import { api, registerRemoteHandler } from '../store';
+import { api, registerRemoteHandler, isExtension } from '../store';
 import { $, $$, escHtml } from '../dom';
 
 // ===== 壁纸模块 =====
@@ -77,16 +77,29 @@ async function updateWallpaperPreview(): Promise<void> {
 
 async function fetchBingWallpaper(idx: number): Promise<void> {
     try {
-        const res = await fetch(`/api/wallpaper/bing?idx=${idx}&n=1`);
-        if (!res.ok) throw new Error('bad status ' + res.status);
-        const data = await res.json();
-        if (!data || !data.url) throw new Error('no url');
-        const url = data.url;
+        let url: string;
+        let copyright = '';
+        if (isExtension) {
+            // 扩展版无服务端代理，直连支持 CORS 的必应壁纸接口
+            const res = await fetch(`https://bing.biturl.top/?resolution=1920&format=json&index=${idx}&mkt=zh-CN`);
+            if (!res.ok) throw new Error('bad status ' + res.status);
+            const data = await res.json();
+            if (!data || !data.url) throw new Error('no url');
+            url = data.url;
+            copyright = data.copyright || '';
+        } else {
+            const res = await fetch(`/api/wallpaper/bing?idx=${idx}&n=1`);
+            if (!res.ok) throw new Error('bad status ' + res.status);
+            const data = await res.json();
+            if (!data || !data.url) throw new Error('no url');
+            url = data.url;
+            copyright = data.copyright || '';
+        }
         applyWallpaperStyle(url);
         detectWallpaperBrightness(url);
         await api.setKv('wallpaper', { url, timestamp: Date.now() });
         const hist = await api.getKv('wallpaper_history') || [];
-        hist.unshift({ url, name: data.copyright });
+        hist.unshift({ url, name: copyright });
         if (hist.length > 12) hist.pop();
         await api.setKv('wallpaper_history', hist);
         await updateWallpaperPreview();
@@ -106,34 +119,49 @@ async function uploadWallpaper(e: Event): Promise<void> {
         const progress = $('#wallpaperProgress');
         if (progress) progress.style.display = 'flex';
         try {
-            const res = await fetch('/api/wallpaper/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/octet-stream', 'X-Wallpaper-Ext': '.' + ext },
-                body: new Uint8Array(ev.target!.result as ArrayBuffer)
-            });
-            const data = await res.json();
-            if (data.ok) {
-                applyWallpaperStyle(data.url);
-                detectWallpaperBrightness(data.url);
-                await api.setKv('wallpaper', { url: data.url, timestamp: Date.now() });
+            if (isExtension) {
+                // 扩展版：以 data URL 存入本地存储（注意体积，仅适合少量壁纸）
+                const dataUrl = ev.target!.result as string;
+                applyWallpaperStyle(dataUrl);
+                detectWallpaperBrightness(dataUrl);
+                await api.setKv('wallpaper', { url: dataUrl, timestamp: Date.now() });
                 const hist = await api.getKv('wallpaper_history') || [];
-                hist.unshift({ url: data.url, name: file.name });
-                if (hist.length > 8) {
-                    const removed = hist.splice(8);
-                    for (const h of removed) {
-                        if (h.url && h.url.startsWith('/wallpapers/')) {
-                            try { await fetch('/api/wallpaper/delete' + h.url.replace('/wallpapers', ''), { method: 'DELETE' }); } catch (e) {}
-                        }
-                    }
-                }
+                hist.unshift({ url: dataUrl, name: file.name });
+                if (hist.length > 8) hist.splice(8);
                 await api.setKv('wallpaper_history', hist);
                 await updateWallpaperPreview();
                 await renderWallpaperHistory();
+            } else {
+                const res = await fetch('/api/wallpaper/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream', 'X-Wallpaper-Ext': '.' + ext },
+                    body: new Uint8Array(ev.target!.result as ArrayBuffer)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    applyWallpaperStyle(data.url);
+                    detectWallpaperBrightness(data.url);
+                    await api.setKv('wallpaper', { url: data.url, timestamp: Date.now() });
+                    const hist = await api.getKv('wallpaper_history') || [];
+                    hist.unshift({ url: data.url, name: file.name });
+                    if (hist.length > 8) {
+                        const removed = hist.splice(8);
+                        for (const h of removed) {
+                            if (h.url && h.url.startsWith('/wallpapers/')) {
+                                try { await fetch('/api/wallpaper/delete' + h.url.replace('/wallpapers', ''), { method: 'DELETE' }); } catch (e) {}
+                            }
+                        }
+                    }
+                    await api.setKv('wallpaper_history', hist);
+                    await updateWallpaperPreview();
+                    await renderWallpaperHistory();
+                }
             }
         } catch (err) { alert('上传失败'); }
         if (progress) progress.style.display = 'none';
     };
-    reader.readAsArrayBuffer(file);
+    if (isExtension) reader.readAsDataURL(file);
+    else reader.readAsArrayBuffer(file);
     (e.target as HTMLInputElement).value = '';
 }
 

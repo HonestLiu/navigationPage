@@ -1,4 +1,4 @@
-import { state, api, registerRemoteHandler, resolveUrl } from '../store';
+import { state, api, registerRemoteHandler, resolveUrl, isExtension } from '../store';
 import { $, $$, escHtml } from '../dom';
 import type { NavItem } from '../types';
 
@@ -226,15 +226,21 @@ export async function fetchFavicon(): Promise<void> {
     btn?.classList.add('loading');
     $$('.icon-option').forEach(o => o.classList.remove('selected'));
     try {
-        const res = await fetch('/api/favicon?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(15000) });
-        if (res.ok) {
-            const blob = await res.blob();
-            const dataUrl = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
-            });
-            applyFavicon(dataUrl);
+        if (isExtension) {
+            // 扩展版无服务端代理：直接取 Google Favicon 服务的图片地址（img 标签可跨域加载）
+            const domain = new URL(url).hostname;
+            applyFavicon('https://www.google.com/s2/favicons?domain=' + domain + '&sz=128');
+        } else {
+            const res = await fetch('/api/favicon?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(15000) });
+            if (res.ok) {
+                const blob = await res.blob();
+                const dataUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+                applyFavicon(dataUrl);
+            }
         }
     } catch (e) {}
     btn?.classList.remove('loading');

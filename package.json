@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:ext": "vite build --config vite.extension.config.ts && node scripts/inline-extension-css.mjs",
     "start": "node server/index.js",
     "typecheck": "tsc --noEmit"
   },

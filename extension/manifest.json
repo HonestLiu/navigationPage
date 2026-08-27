@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "MyPageHome 导航主页",
+  "version": "3.0.0",
+  "description": "个人导航主页 / 新标签页。数据保存在本地（chrome.storage），已移除文件互传功能。",
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

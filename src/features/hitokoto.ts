@@ -1,4 +1,5 @@
 import { $ } from '../dom';
+import { isExtension } from '../store';
 
 // ===== 一言模块 =====
 
@@ -9,7 +10,10 @@ async function fetchHitokoto(): Promise<void> {
     const f = $('#hitokotoFrom');
     if (!t) return;
     try {
-        const r = await fetch('/api/hitokoto', { signal: AbortSignal.timeout(6000) });
+        const url = isExtension
+            ? 'https://v1.hitokoto.cn/?c=d&c=h&c=i&c=k'
+            : '/api/hitokoto';
+        const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
         if (!r.ok) throw new Error(String(r.status));
         const d = await r.json();
         if (d.hitokoto) {
