@@ -15,9 +15,18 @@ if (!linkMatch) {
 const cssPath = path.join(dir, linkMatch[1].replace(/^\.\//, ''));
 let css = fs.readFileSync(cssPath, 'utf8');
 
-// CSS 原本在 assets/ 下，其中字体 url 是相对 assets/ 的（如 ./fa-solid-xxx.woff2）。
-// 内联进根目录的 index.html 后，这些相对路径要改指 ./assets/，否则 Font Awesome 字体加载失败、图标消失。
-css = css.replace(/url\(\s*['"]?\.\/([^'")]+?)\s*['"]?\)/g, (_m, p1) => 'url(./assets/' + p1 + ')');
+// 把 Font Awesome 字体（woff2）直接内联为 base64 data URI。
+// 扩展页面里外链字体常因路径/CSP/MIME 等问题加载失败，导致图标全部消失；
+// data URI 由浏览器直接解析，绝不会加载失败，从根上解决问题。
+// Vite 产出的字体 url 形如 ./fa-solid-xxx.woff2（相对 CSS 所在 assets/ 目录）
+css = css.replace(/url\(\s*['"]?\.\/([^'")]+?\.woff2)\s*['"]?\)/g, (_m, p1) => {
+  const fp = path.join(dir, 'assets', p1.replace(/^\.\//, ''));
+  const b64 = fs.readFileSync(fp).toString('base64');
+  return `url(data:font/woff2;base64,${b64})`;
+});
+
+// 其余相对 url（如 ttf 兜底、背景图等）指向 ./assets/，避免重复前缀
+css = css.replace(/url\(\s*['"]?\.\/(?!assets\/)([^'")]+?)\s*['"]?\)/g, (_m, p1) => 'url(./assets/' + p1 + ')');
 
 // 用内联 <style> 替换外链 <link>
 html = html.replace(linkMatch[0], `<style>${css}</style>`);

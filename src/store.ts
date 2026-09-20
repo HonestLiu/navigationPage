@@ -1,5 +1,5 @@
 import { Api, ChromeStore, type Backend } from './api';
-import type { NavItem, Engine, Todo, Note, ClipboardItem, DnsEntry, ToolConfig } from './types';
+import type { NavItem, Engine, Todo, Note, ClipboardItem, DnsEntry, ToolConfig, FrequentVisits } from './types';
 
 // 是否运行在 Chrome 扩展环境（有 chrome.storage 即为扩展）
 export const isExtension: boolean =
@@ -22,7 +22,12 @@ export const state = {
     currentNoteId: null as number | null,
     clipboardItems: [] as ClipboardItem[],
     currentEngine: 'google',
-    toolsConfig: [] as ToolConfig[]
+    toolsConfig: [] as ToolConfig[],
+    frequentVisits: {} as FrequentVisits,
+    // 搜索框回车后：'newtab' 新标签页打开（默认，保留历史行为），'current' 原地跳转
+    searchOpenMode: 'newtab' as 'newtab' | 'current',
+    // 「常去的网站」总开关（默认开，行为不变；关闭后整段不渲染）
+    frequentSitesEnabled: true
 };
 
 // 扩展版首次运行（本地存储为空）时，播种与 web 版一致的默认数据
@@ -30,7 +35,7 @@ export const DEFAULT_ENGINES: Engine[] = [
     { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=%s', icon: 'fa-brands fa-google', color: '#4285f4', sort_order: 0 },
     { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=%s', icon: 'fa-solid fa-magnifying-glass', color: '#00809d', sort_order: 1 },
     { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=%s', icon: 'fa-solid fa-paw', color: '#2932e1', sort_order: 2 },
-    { id: 'duckduckgo', name: 'DuckDuckGo', url: 'duckduckgo.com/?q=%s', icon: 'fa-solid fa-duck', color: '#de5833', sort_order: 3 }
+    { id: 'duckduckgo', name: 'DuckDuckGo', url: 'duckduckgo.com/?q=%s', icon: './DuckDuckGo.svg', color: '#de5833', sort_order: 3 }
 ];
 
 export const DEFAULT_NAV_ITEMS: NavItem[] = [

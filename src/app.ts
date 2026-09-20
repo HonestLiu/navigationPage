@@ -107,11 +107,27 @@ export async function init(): Promise<void> {
     state.currentTheme = (await api.getKv('theme')) || 'dark';
     state.accentColor = (await api.getKv('accent_color')) || '#7c8aff';
     state.currentPosition = (await api.getKv('layout_position')) || 'center';
+    state.searchOpenMode = ((await api.getKv('search_open_mode')) as 'newtab' | 'current') || 'newtab';
+    // 老用户没存过该键时视为开启，行为不变
+    const freqEnabled = await api.getKv('frequent_sites_enabled');
+    state.frequentSitesEnabled = freqEnabled === undefined ? true : !!freqEnabled;
     state.categoryOrder = (await api.getKv('category_order')) || [];
     state.dnsMap = (await api.getKv('dns_map')) || [];
     state.navItems = await api.getNavItems();
     state.engines = await api.getEngines();
     state.currentEngine = (await api.getKv('current_engine')) || 'google';
+    // 插件版：合并 localStorage 兜底（同步、不会漏）和 chrome.storage（跨标签同步源）
+    if (isExtension) {
+        try {
+            const local = JSON.parse(localStorage.getItem('frequent_visits') || '{}') || {};
+            const remote = (await api.getKv('frequent_visits')) || {};
+            const merged: Record<string, number> = { ...(local as any) };
+            for (const k of Object.keys(remote)) merged[k] = Math.max(merged[k] || 0, (remote as any)[k] || 0);
+            state.frequentVisits = merged;
+        } catch (e) { state.frequentVisits = (await api.getKv('frequent_visits')) || {}; }
+    } else {
+        state.frequentVisits = (await api.getKv('frequent_visits')) || {};
+    }
 
     // 确保默认导航与搜索引擎存在（按 id 补全，不覆盖用户已添加/修改的内容）
     const existingNavIds = new Set(state.navItems.map(i => i.id));
@@ -123,7 +139,7 @@ export async function init(): Promise<void> {
 
     const norm = (s: string) => (s || '').trim().toLowerCase();
     const existingEngineKeys = new Set<string>();
-    const cleanedEngines = state.engines.filter((e: any) => {
+    let cleanedEngines = state.engines.filter((e: any) => {
         const idKey = norm(e.id);
         const nameKey = norm(e.name);
         const urlKey = norm(e.url);
@@ -134,10 +150,22 @@ export async function init(): Promise<void> {
         return true;
     });
     let engineChanged = cleanedEngines.length !== state.engines.length;
+    const ddgIcon = (DEFAULT_ENGINES.find(e => e.id === 'duckduckgo') || ({} as any)).icon;
     for (const engine of DEFAULT_ENGINES) {
         const present = cleanedEngines.some((e: any) =>
             norm(e.id) === norm(engine.id) || norm(e.name) === norm(engine.name) || norm(e.url) === norm(engine.url));
         if (!present) { cleanedEngines.push(engine); engineChanged = true; }
+    }
+    // 已存在的 DuckDuckGo 若仍是旧 Font Awesome 图标（非图片），统一替换为 SVG，
+    // 兼容各种历史残留的 icon 值（fa-solid fa-duck 等）
+    if (ddgIcon) {
+        const isImg = (ic: string) => !!ic && (ic.startsWith('data:image') || /^(https?:)?\/\//i.test(ic) || /\.(svg|png|jpe?g|gif|webp)(\?|$)/i.test(ic));
+        const migrated = cleanedEngines.map((e: any) =>
+            (e.id === 'duckduckgo' && !isImg(e.icon)) ? { ...e, icon: ddgIcon } : e);
+        if (migrated.some((e: any, i: number) => e.icon !== cleanedEngines[i].icon)) {
+            cleanedEngines = migrated;
+            engineChanged = true;
+        }
     }
     if (engineChanged) {
         await api.setEngines(cleanedEngines);
@@ -167,6 +195,7 @@ export async function init(): Promise<void> {
     engines.initEngines();
     nav.renderCategoryTabs();
     nav.renderNavItems();
+    nav.renderFrequentSites();
     nav.applyLayoutPosition();
     nav.initNav();
     search.initSearch();

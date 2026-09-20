@@ -2,7 +2,7 @@ import { state, api, registerRemoteHandler } from '../store';
 import { $, $$, escHtml } from '../dom';
 import type { Engine, DnsEntry } from '../types';
 import * as nav from './nav';
-import { renderEngines, selectEngine } from './engines';
+import { renderEngines, selectEngine, engineIconHtml } from './engines';
 
 export function toggleSettings(): void {
     const sp = $('#settingsPanel');
@@ -20,6 +20,14 @@ export function applyToolsVisibility(): void {
     config.forEach(tool => {
         const el = $('#tool-' + tool.id);
         if (el) (el as HTMLElement).style.display = tool.enabled ? '' : 'none';
+    });
+}
+
+// 「搜索打开方式」按钮高亮同步
+export function updateSearchOpenButtons(): void {
+    $$('.position-btn').forEach(btn => {
+        const el = btn as HTMLElement;
+        if (el.dataset.searchMode) el.classList.toggle('active', el.dataset.searchMode === state.searchOpenMode);
     });
 }
 
@@ -60,7 +68,7 @@ export async function renderSettingsLists(): Promise<void> {
     const engineList = $('#engineList');
     if (engineList) {
         engineList.innerHTML = state.engines.map(engine =>
-            `<div class="engine-row" data-id="${escHtml(engine.id)}"><div class="item-icon" style="background:${escHtml(engine.color)};"><i class="${escHtml(engine.icon)}"></i></div><div class="item-info"><div class="item-name">${escHtml(engine.name)}</div><div class="item-url">${escHtml(engine.url)}</div></div><button class="engine-default ${engine.id === state.currentEngine ? 'is-default' : ''}" data-id="${escHtml(engine.id)}">${engine.id === state.currentEngine ? '默认' : '设为默认'}</button><div class="item-actions"><button class="edit-item" data-id="${escHtml(engine.id)}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${escHtml(engine.id)}"><i class="fas fa-trash"></i></button></div></div>`
+            `<div class="engine-row" data-id="${escHtml(engine.id)}"><div class="item-icon" style="background:${escHtml(engine.color)};">${engineIconHtml(engine, false)}</div><div class="item-info"><div class="item-name">${escHtml(engine.name)}</div><div class="item-url">${escHtml(engine.url)}</div></div><button class="engine-default ${engine.id === state.currentEngine ? 'is-default' : ''}" data-id="${escHtml(engine.id)}">${engine.id === state.currentEngine ? '默认' : '设为默认'}</button><div class="item-actions"><button class="edit-item" data-id="${escHtml(engine.id)}"><i class="fas fa-edit"></i></button><button class="delete-item" data-id="${escHtml(engine.id)}"><i class="fas fa-trash"></i></button></div></div>`
         ).join('');
         engineList.querySelectorAll('.engine-default').forEach(btn => btn.addEventListener('click', async () => {
             await selectEngine((btn as HTMLElement).dataset.id!);
@@ -326,14 +334,44 @@ export function initSettings(): void {
     $('#fileInput')?.addEventListener('change', (e) => importConfig(e));
     $('#resetBtn')?.addEventListener('click', () => resetData());
 
+    // 「常去的网站」总开关
+    const freqToggle = $('#frequentSitesToggle');
+    if (freqToggle) {
+        freqToggle.classList.toggle('active', state.frequentSitesEnabled);
+        freqToggle.addEventListener('click', async () => {
+            state.frequentSitesEnabled = !state.frequentSitesEnabled;
+            freqToggle.classList.toggle('active', state.frequentSitesEnabled);
+            try { await api.setKv('frequent_sites_enabled', state.frequentSitesEnabled); } catch (e) { /* ignore */ }
+            nav.renderFrequentSites();
+        });
+    }
+
     $$('.position-btn').forEach(btn => btn.addEventListener('click', () => {
-        state.currentPosition = (btn as HTMLElement).dataset.position!;
+        const el = btn as HTMLElement;
+        if (el.dataset.searchMode) {
+            // 「搜索打开方式」按钮：复用 .position-btn 样式，但走独立分支
+            state.searchOpenMode = el.dataset.searchMode as 'newtab' | 'current';
+            api.setKv('search_open_mode', state.searchOpenMode);
+            updateSearchOpenButtons();
+            return;
+        }
+        if (!el.dataset.position) return;
+        state.currentPosition = el.dataset.position;
         api.setKv('layout_position', state.currentPosition);
         nav.applyLayoutPosition();
     }));
 
+    updateSearchOpenButtons();
+
     registerRemoteHandler((type, key, data) => {
         if (type === 'kv' && key === 'tools_config') { state.toolsConfig = data; applyToolsVisibility(); renderToolsConfig(); }
+        else if (type === 'kv' && key === 'search_open_mode') { state.searchOpenMode = (data as 'newtab' | 'current') || 'newtab'; updateSearchOpenButtons(); }
+        else if (type === 'kv' && key === 'frequent_sites_enabled') {
+            state.frequentSitesEnabled = data === undefined ? true : !!data;
+            const t = $('#frequentSitesToggle');
+            if (t) t.classList.toggle('active', state.frequentSitesEnabled);
+            nav.renderFrequentSites();
+        }
     });
 
     applyToolsVisibility();

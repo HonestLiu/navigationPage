@@ -1,9 +1,14 @@
 import { state, api, registerRemoteHandler, resolveUrl, isExtension } from '../store';
 import { $, $$, escHtml } from '../dom';
-import type { NavItem } from '../types';
+import type { NavItem, FrequentVisits } from '../types';
 
 let selectedIcon = 'fa-solid fa-link';
 let contextMenuTargetId: string | null = null;
+
+// 「常去的网站」：同一导航项在 5 秒内的重复点击只算一次，避免误双击污染排名
+const VISIT_COOLDOWN_MS = 5000;
+const lastVisitTs = new Map<string, number>();
+const FREQUENT_LIMIT = 8;
 
 export function setSelectedIcon(v: string): void { selectedIcon = v; }
 
@@ -42,7 +47,12 @@ export function renderNavItems(): void {
         return `<a href="${escHtml(item.url)}" class="nav-item" data-id="${item.id}"><div class="icon" style="background:${escHtml(item.color)};">${iconHtml}</div><span class="name">${escHtml(item.name)}</span></a>`;
     }).join('');
     grid.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => { e.preventDefault(); window.open(resolveUrl((item as HTMLAnchorElement).href), '_blank'); });
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const id = (item as HTMLElement).dataset.id!;
+            recordVisit(id);
+            window.open(resolveUrl((item as HTMLAnchorElement).href), '_blank');
+        });
         item.addEventListener('contextmenu', (e) => { e.preventDefault(); showContextMenu(e as MouseEvent, (item as HTMLElement).dataset.id!); });
     });
 }
@@ -51,6 +61,8 @@ export async function refreshNav(): Promise<void> {
     state.navItems = await api.getNavItems();
     renderCategoryTabs();
     renderNavItems();
+    // 导航项集合变了，常去的网站里引用的图标/名称也要重画
+    renderFrequentSites();
 }
 
 // ===== 布局位置 =====
@@ -262,6 +274,125 @@ function applyFavicon(iconUrl: string): void {
     }
 }
 
+// ===== 常去的网站 =====
+// 插件里 chrome.storage.local.set 是异步的，跨标签页偶发竞态（点完立刻开新标签，会读不到刚写的访问数）。
+// 因此插件版额外用 localStorage 做同步兜底，Web 版只用服务端 KV。
+const FREQUENT_LOCAL_KEY = 'frequent_visits';
+
+function loadFrequentLocal(): FrequentVisits {
+    try {
+        const raw = localStorage.getItem(FREQUENT_LOCAL_KEY);
+        if (!raw) return {};
+        const obj = JSON.parse(raw);
+        return (obj && typeof obj === 'object') ? obj as FrequentVisits : {};
+    } catch (e) { return {}; }
+}
+
+function saveFrequentLocal(visits: FrequentVisits): void {
+    try { localStorage.setItem(FREQUENT_LOCAL_KEY, JSON.stringify(visits)); } catch (e) { /* ignore */ }
+}
+
+function mergeVisits(a: FrequentVisits, b: FrequentVisits): FrequentVisits {
+    // 同一导航项取较大值，避免插件中异步写入和 localStorage 兜底之间互相覆盖丢失访问数
+    const out: FrequentVisits = { ...a };
+    for (const k of Object.keys(b)) out[k] = Math.max(out[k] || 0, b[k] || 0);
+    return out;
+}
+
+function navIconHtml(item: NavItem): string {
+    const isImg = item.icon && !item.icon.startsWith('fa-');
+    return isImg
+        ? `<img src="${escHtml(item.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`
+        : `<i class="${escHtml(item.icon)}"></i>`;
+}
+
+export async function recordVisit(itemId: string): Promise<void> {
+    if (!itemId) return;
+    const now = Date.now();
+    const last = lastVisitTs.get(itemId) || 0;
+    if (now - last < VISIT_COOLDOWN_MS) return; // 短时间重复点击视为一次
+    lastVisitTs.set(itemId, now);
+
+    // 插件版：优先以 localStorage 的旧值作为底（避免和异步 chrome.storage 写入竞态），再 +1
+    let visits: FrequentVisits;
+    if (isExtension) {
+        visits = mergeVisits(loadFrequentLocal(), state.frequentVisits || {});
+    } else {
+        visits = { ...(state.frequentVisits || {}) };
+    }
+    visits[itemId] = (visits[itemId] || 0) + 1;
+    state.frequentVisits = visits;
+    if (isExtension) saveFrequentLocal(visits);
+    renderFrequentSites();
+
+    // 持久化失败不影响本次渲染；后续 SSE 同步来时会被覆盖
+    try { await api.setKv('frequent_visits', visits); } catch (e) { /* ignore */ }
+}
+
+export async function clearFrequentVisits(): Promise<void> {
+    if (!confirm('确定清空常去的网站记录？')) return;
+    state.frequentVisits = {};
+    lastVisitTs.clear();
+    if (isExtension) saveFrequentLocal({});
+    try { await api.setKv('frequent_visits', {}); } catch (e) { /* ignore */ }
+    renderFrequentSites();
+}
+
+export function renderFrequentSites(): void {
+    const section = $('#frequentSitesSection');
+    if (!section) return;
+    // 总开关关闭 → 整段不渲染（连 placeholder 都不留）
+    if (!state.frequentSitesEnabled) {
+        section.innerHTML = '';
+        section.classList.remove('active');
+        return;
+    }
+    // 插件版：每次渲染前合并 localStorage 与 state，避免异步 set 漏写导致列表消失
+    if (isExtension) {
+        state.frequentVisits = mergeVisits(loadFrequentLocal(), state.frequentVisits || {});
+    }
+    const visits = state.frequentVisits || {};
+    // 按访问次数倒序；找不到对应导航项（已被删除）的忽略；最多展示 N 个
+    const entries = Object.entries(visits)
+        .map(([id, count]) => ({ id, count: count as number, item: state.navItems.find(i => String(i.id) === id) }))
+        .filter((e): e is { id: string; count: number; item: NavItem } => !!e.item && e.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, FREQUENT_LIMIT);
+
+    if (entries.length === 0) {
+        section.innerHTML = '';
+        section.classList.remove('active');
+        return;
+    }
+    section.classList.add('active');
+    section.innerHTML =
+        `<div class="frequent-header">` +
+            `<h3><i class="fas fa-clock-rotate-left"></i> 常去的网站</h3>` +
+            `<button class="frequent-clear-btn" id="frequentClearBtn" title="清空记录">` +
+                `<i class="fas fa-trash-can"></i><span>清空</span>` +
+            `</button>` +
+        `</div>` +
+        `<div class="frequent-grid">` +
+            entries.map(e =>
+                `<a href="${escHtml(e.item.url)}" class="frequent-item" data-id="${escHtml(e.id)}" title="已访问 ${e.count} 次">` +
+                    `<div class="icon" style="background:${escHtml(e.item.color)};">${navIconHtml(e.item)}</div>` +
+                    `<span class="name">${escHtml(e.item.name)}</span>` +
+                    `<span class="count-badge">${e.count}</span>` +
+                `</a>`
+            ).join('') +
+        `</div>`;
+
+    section.querySelectorAll('.frequent-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const id = (item as HTMLElement).dataset.id!;
+            recordVisit(id);
+            window.open(resolveUrl((item as HTMLAnchorElement).href), '_blank');
+        });
+    });
+    section.querySelector('#frequentClearBtn')?.addEventListener('click', () => clearFrequentVisits());
+}
+
 export function initNav(): void {
     // 图标选择面板
     const iconPicker = $('#iconPicker');
@@ -288,5 +419,6 @@ export function initNav(): void {
         else if (type === 'kv' && key === 'current_category') { state.currentCategory = data; renderCategoryTabs(); renderNavItems(); }
         else if (type === 'kv' && key === 'category_order') { state.categoryOrder = data; renderCategoryTabs(); }
         else if (type === 'kv' && key === 'layout_position') { state.currentPosition = data; applyLayoutPosition(); }
+        else if (type === 'kv' && key === 'frequent_visits') { state.frequentVisits = data || {}; renderFrequentSites(); }
     });
 }

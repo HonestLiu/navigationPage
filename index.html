@@ -62,6 +62,8 @@
                         </button>
                     </div>
                 </div>
+                <!-- 常去的网站：按点击次数从高到低自动展示，无记录时整段隐藏 -->
+                <div class="frequent-sites-section" id="frequentSitesSection"></div>
             </div>
 
             <!-- 工具视图 -->
@@ -548,6 +550,26 @@
                                 <button class="position-btn" data-position="bottom">
                                     <i class="fas fa-arrow-down"></i><span>底部</span>
                                 </button>
+                            </div>
+                        </div>
+                        <div class="layout-card">
+                            <div class="layout-label">搜索打开方式</div>
+                            <div class="position-options">
+                                <button class="position-btn" data-search-mode="newtab">
+                                    <i class="fas fa-arrow-up-right-from-square"></i><span>新标签页</span>
+                                </button>
+                                <button class="position-btn" data-search-mode="current">
+                                    <i class="fas fa-arrow-right"></i><span>原地跳转</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="layout-card">
+                            <div class="layout-toggle-row">
+                                <div>
+                                    <div class="layout-label">常去的网站</div>
+                                    <div class="layout-desc">记录导航项访问次数，在底部自动展示最常访问的网站</div>
+                                </div>
+                                <button class="toggle-switch" id="frequentSitesToggle" title="启用/关闭 常去的网站"></button>
                             </div>
                         </div>
                     </div>

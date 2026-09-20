@@ -59,3 +59,6 @@ export interface ToolConfig {
     icon: string;
     enabled: boolean;
 }
+
+// 导航项访问次数：key 为 navItemId（数字转字符串），value 为点击次数
+export type FrequentVisits = Record<string, number>;

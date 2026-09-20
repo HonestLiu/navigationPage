@@ -15,7 +15,11 @@ export function search(): void {
 
 export function searchWithQuery(query: string): void {
     const engine = state.engines.find(e => e.id === state.currentEngine) || state.engines[0];
-    if (engine) window.open(engine.url.replace('%s', encodeURIComponent(query)), '_blank');
+    if (engine) {
+        const url = engine.url.replace('%s', encodeURIComponent(query));
+        if (state.searchOpenMode === 'current') window.location.href = url;
+        else window.open(url, '_blank');
+    }
     closeSuggestions();
     const input = $<HTMLInputElement>('#searchInput');
     if (input) input.value = query;
@@ -42,7 +46,12 @@ async function getGoogleSuggestions(q: string): Promise<string[]> {
     try { const r = await fetch('https://suggestqueries.google.com/complete/search?client=firefox&q=' + encodeURIComponent(q)); const d = await r.json(); return (d[1] || []).slice(0, 8); } catch (e) { return []; }
 }
 async function getBingSuggestions(q: string): Promise<string[]> {
-    try { const r = await fetch('https://api.bing.com/qsonhs.aspx?q=' + encodeURIComponent(q)); const d = await r.json(); return (d.AS?.Results?.[0]?.Suggests || []).map((s: any) => s.Text).slice(0, 8); } catch (e) { return []; }
+    try {
+        const r = await fetch('https://api.bing.com/qsonhs.aspx?q=' + encodeURIComponent(q));
+        const d = await r.json();
+        // Bing 接口字段是 Txt（不是 Text），用 || 兼容历史版本
+        return (d.AS?.Results?.[0]?.Suggests || []).map((s: any) => s.Txt || s.Text).filter(Boolean).slice(0, 8);
+    } catch (e) { return []; }
 }
 async function getBaiduSuggestions(q: string): Promise<string[]> {
     return new Promise<string[]>((resolve) => {
